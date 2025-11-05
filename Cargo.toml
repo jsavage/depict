@@ -65,7 +65,7 @@ members = [
   "dioxus",
   #"objc",
   "parse",
-  #"server",
+  "server",
   #"tikz",
   "web",
 ]
