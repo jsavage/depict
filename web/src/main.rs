@@ -212,7 +212,7 @@ pub fn app(cx: Scope<AppProps>) -> Element {
                     // key: "editor_editor",
                     textarea {
                         style: "box-sizing: border-box; width: calc(100% - 2em); border-width: 1px; border-color: #000;",
-                        rows: "6",
+                        rows: "10",
                         autocomplete: "off",
                         // autocorrect: "off",
                         "autocapitalize": "off",
