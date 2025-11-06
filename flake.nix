@@ -46,19 +46,22 @@
           devShell = lib.depict { isShell = true; };
           defaultPackage = depict;
 
-          server = with final; with pkgs; let
-            subpkg = "depict-server";
-            serverBin = (lib.depict { isShell = false; subpkg = subpkg; subdir = "server"; });
-          in stdenv.mkDerivation { 
-            pname = "${subpkg}";
+# This 'Server derivation' modified by JS to enable server component to be built as a separate package
+# not sure is this is actually necessary or not
+          server = with final; with pkgs; stdenv.mkDerivation {
+            pname = "depict-server";
             version = depictVersion;
+            src = ./.;
+          
             buildInputs = [ makeWrapper ];
+ 
+            cargoBuildCommand = "cargo build --release --manifest-path=server/Cargo.toml";
+          
             phases = [ "installPhase" ];
             installPhase = ''
               mkdir -p $out/bin
-              cp ${serverBin}/bin/${subpkg} $out/bin/${subpkg}
-              wrapProgram $out/bin/${subpkg} \
-                --set WEBROOT ${web}
+              cp target/release/depict-server $out/bin/
+              wrapProgram $out/bin/depict-server --set WEBROOT ${web}
             '';
           };
 
