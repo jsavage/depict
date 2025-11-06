@@ -56,7 +56,7 @@
             phases = [ "installPhase" ];
             installPhase = ''
               mkdir -p $out/bin
-              cp ${serverBin}/bin/${subpkg} $out/bin/${subpkg}
+              cp ${serverBin}/target/release/${subpkg} $out/bin/${subpkg}
               wrapProgram $out/bin/${subpkg} \
                 --set WEBROOT ${web}
             '';
