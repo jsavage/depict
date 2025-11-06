@@ -1,5 +1,5 @@
 {
-  description = "github.com/mstone/depict";
+  description = "github.com/jsavage/depict";
 
   inputs.crane.url = "github:ipetkov/crane";
   inputs.crane.inputs.nixpkgs.follows = "nixpkgs";
@@ -18,14 +18,14 @@
   inputs.rust-overlay.inputs.flake-utils.follows = "flake-utils";
   inputs.rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
 
-  inputs.nixbom.url = "github:mstone/nixbom";
+  inputs.nixbom.url = "github:jsavage/nixbom";
   inputs.nixbom.inputs.crane.follows = "crane";
   inputs.nixbom.inputs.flake-utils.follows = "flake-utils";
   inputs.nixbom.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nixbom.inputs.nix-filter.follows = "nix-filter";
   inputs.nixbom.inputs.rust-overlay.follows = "rust-overlay";
 
-  inputs.cargo-include-licenses.url = "github:mstone/cargo-include-licenses";
+  inputs.cargo-include-licenses.url = "github:jsavage/cargo-include-licenses";
   inputs.cargo-include-licenses.inputs.crane.follows = "crane";
   inputs.cargo-include-licenses.inputs.flake-utils.follows = "flake-utils";
   inputs.cargo-include-licenses.inputs.nixpkgs.follows = "nixpkgs";
