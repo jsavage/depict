@@ -18,7 +18,7 @@
   inputs.rust-overlay.inputs.flake-utils.follows = "flake-utils";
   inputs.rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
 
-  inputs.nixbom.url = "github:jsavage/nixbom";
+  inputs.nixbom.url = "github:mstone/nixbom";
   inputs.nixbom.inputs.crane.follows = "crane";
   inputs.nixbom.inputs.flake-utils.follows = "flake-utils";
   inputs.nixbom.inputs.nixpkgs.follows = "nixpkgs";
