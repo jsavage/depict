@@ -25,7 +25,7 @@
   inputs.nixbom.inputs.nix-filter.follows = "nix-filter";
   inputs.nixbom.inputs.rust-overlay.follows = "rust-overlay";
 
-  inputs.cargo-include-licenses.url = "github:mstone-include-licenses";
+  inputs.cargo-include-licenses.url = "github:mstone/cargo-include-licenses";
   inputs.cargo-include-licenses.inputs.crane.follows = "crane";
   inputs.cargo-include-licenses.inputs.flake-utils.follows = "flake-utils";
   inputs.cargo-include-licenses.inputs.nixpkgs.follows = "nixpkgs";
