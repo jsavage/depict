@@ -1,0 +1,357 @@
+name: Build and Test Depict
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  diagnostics:
+    name: Run Diagnostics
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for git diagnostics
+    
+    - name: Setup Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: wasm32-unknown-unknown
+    
+    - name: Cache cargo registry
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+    
+    - name: Cache cargo index
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+    
+    - name: Make scripts executable
+      run: |
+        chmod +x diagnose.sh
+        chmod +x build.sh
+        chmod +x test.sh
+    
+    - name: Run diagnostic script
+      run: ./diagnose.sh
+    
+    - name: Upload diagnostic results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: diagnostics-${{ github.sha }}
+        path: |
+          diagnostics/**/*.txt
+          diagnostics/**/*.tar.gz
+        retention-days: 30
+    
+    - name: Display diagnostic summary
+      if: always()
+      run: |
+        LATEST_DIAG=$(find diagnostics -type d -name "20*" | sort | tail -1)
+        if [ -d "$LATEST_DIAG" ]; then
+          echo "=== Diagnostic Summary ==="
+          cat "$LATEST_DIAG/00_SUMMARY.txt"
+        fi
+
+  build-cargo:
+    name: Build with Cargo
+    runs-on: ubuntu-22.04
+    needs: diagnostics
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Setup Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: wasm32-unknown-unknown
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pkg-config libssl-dev
+    
+    - name: Install build tools
+      run: |
+        cargo install trunk wasm-bindgen-cli --locked || true
+    
+    - name: Cache cargo build
+      uses: actions/cache@v3
+      with:
+        path: target
+        key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+    
+    - name: Make build script executable
+      run: chmod +x build.sh
+    
+    - name: Build with Cargo
+      run: ./build.sh --method cargo
+    
+    - name: Upload build results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: build-cargo-${{ github.sha }}
+        path: |
+          build_output/**/BUILD_SUMMARY.txt
+          build_output/**/logs/**
+          build_output/**/dist/**
+        retention-days: 30
+    
+    - name: Display build summary
+      if: always()
+      run: |
+        LATEST_BUILD=$(find build_output -type f -name "BUILD_SUMMARY.txt" | sort | tail -1)
+        if [ -f "$LATEST_BUILD" ]; then
+          echo "=== Build Summary ==="
+          cat "$LATEST_BUILD"
+        fi
+
+  build-nix:
+    name: Build with Nix
+    runs-on: ubuntu-22.04
+    needs: diagnostics
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Install Nix
+      uses: cachix/install-nix-action@v24
+      with:
+        nix_path: nixpkgs=channel:nixos-unstable
+        extra_nix_config: |
+          experimental-features = nix-command flakes
+    
+    - name: Setup Nix cache
+      uses: cachix/cachix-action@v12
+      with:
+        name: depict
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+        skipPush: ${{ github.event_name == 'pull_request' }}
+    
+    - name: Make build script executable
+      run: chmod +x build.sh
+    
+    - name: Build with Nix
+      run: ./build.sh --method nix
+      continue-on-error: true  # Don't fail if Nix build has issues
+    
+    - name: Upload build results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: build-nix-${{ github.sha }}
+        path: |
+          build_output/**/BUILD_SUMMARY.txt
+          build_output/**/logs/**
+          build_output/**/dist/**
+        retention-days: 30
+
+  build-docker:
+    name: Build with Docker
+    runs-on: ubuntu-22.04
+    needs: diagnostics
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Make build script executable
+      run: chmod +x build.sh
+    
+    - name: Build with Docker
+      run: ./build.sh --method docker
+    
+    - name: Upload build results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: build-docker-${{ github.sha }}
+        path: |
+          build_output/**/BUILD_SUMMARY.txt
+          build_output/**/logs/**
+          build_output/**/dist/**
+        retention-days: 30
+
+  test:
+    name: Integration Tests
+    runs-on: ubuntu-22.04
+    needs: [build-cargo]
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: build-cargo-${{ github.sha }}
+        path: build_output
+    
+    - name: Make test script executable
+      run: chmod +x test.sh
+    
+    - name: Find server binary
+      id: find_server
+      run: |
+        SERVER=$(find build_output -name "depict-server" -type f -executable | head -1)
+        if [ -z "$SERVER" ]; then
+          echo "Server binary not found!"
+          exit 1
+        fi
+        chmod +x "$SERVER"
+        echo "server_path=$SERVER" >> $GITHUB_OUTPUT
+    
+    - name: Install test dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y curl lsof
+    
+    - name: Run integration tests
+      run: ./test.sh --server-path "${{ steps.find_server.outputs.server_path }}"
+      timeout-minutes: 5
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-${{ github.sha }}
+        path: |
+          test_results/**/*.log
+          test_results/**/*.txt
+          test_results/**/*.html
+          test_results/**/*.svg
+        retention-days: 30
+    
+    - name: Display test report
+      if: always()
+      run: |
+        LATEST_TEST=$(find test_results -type f -name "TEST_REPORT.txt" | sort | tail -1)
+        if [ -f "$LATEST_TEST" ]; then
+          echo "=== Test Report ==="
+          cat "$LATEST_TEST"
+        fi
+
+  analysis:
+    name: Code Analysis
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Setup Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy, rustfmt
+    
+    - name: Run cargo fmt check
+      run: cargo fmt --all -- --check
+      continue-on-error: true
+    
+    - name: Run clippy
+      run: cargo clippy --all-targets --all-features -- -D warnings
+      continue-on-error: true
+    
+    - name: Install cargo-udeps
+      run: cargo install cargo-udeps --locked || true
+    
+    - name: Check for unused dependencies
+      run: cargo +nightly udeps --all-targets || true
+      continue-on-error: true
+    
+    - name: Install cargo-bloat
+      run: cargo install cargo-bloat --locked || true
+    
+    - name: Analyze binary size
+      run: |
+        cargo build --release -p depict-desktop || true
+        cargo build --release -p depict-server || true
+        if [ -f "target/release/depict-desktop" ]; then
+          echo "=== Desktop binary analysis ==="
+          cargo bloat --release -p depict-desktop || true
+        fi
+      continue-on-error: true
+
+  report:
+    name: Generate Final Report
+    runs-on: ubuntu-22.04
+    needs: [diagnostics, build-cargo, build-nix, build-docker, test, analysis]
+    if: always()
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: all_artifacts
+    
+    - name: Generate consolidated report
+      run: |
+        cat > consolidated_report.md << 'EOF'
+        # Depict Build and Test Report
+        
+        **Commit:** ${{ github.sha }}
+        **Branch:** ${{ github.ref_name }}
+        **Triggered by:** ${{ github.event_name }}
+        **Date:** $(date -Iseconds)
+        
+        ## Job Status
+        
+        - Diagnostics: ${{ needs.diagnostics.result }}
+        - Build (Cargo): ${{ needs.build-cargo.result }}
+        - Build (Nix): ${{ needs.build-nix.result }}
+        - Build (Docker): ${{ needs.build-docker.result }}
+        - Tests: ${{ needs.test.result }}
+        - Analysis: ${{ needs.analysis.result }}
+        
+        ## Artifacts
+        
+        EOF
+        
+        echo "### Available Artifacts" >> consolidated_report.md
+        find all_artifacts -type f | head -50 >> consolidated_report.md
+        
+        cat consolidated_report.md
+    
+    - name: Upload consolidated report
+      uses: actions/upload-artifact@v4
+      with:
+        name: consolidated-report-${{ github.sha }}
+        path: consolidated_report.md
+        retention-days: 90
+    
+    - name: Comment PR with results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const report = fs.readFileSync('consolidated_report.md', 'utf8');
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: report
+          });
