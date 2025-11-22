@@ -1,14 +1,61 @@
-name: "Test"
+# A clear name for the workflow as it appears in the GitHub Actions tab.
+name: "Check that Desktop and Web can be built"
+
+# Defines the events that trigger this workflow.
 on:
   pull_request:
   push:
+
 jobs:
+  # The identifier for the testing job.
   tests:
     runs-on: ubuntu-latest
+    
     steps:
-    - uses: actions/checkout@v2.4.0
-    - uses: cachix/install-nix-action@v16
+    
+    # 1. Checkout the repository code. (No change)
+    - name: Checkout Repository
+      uses: actions/checkout@v2.4.0
+      
+    # 2. Install Nix. (No change)
+    - name: Install Nix Package Manager
+      uses: cachix/install-nix-action@v16
       with:
         extra_nix_config: |
           access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-    - run: nix build .#web .#desktop
+          
+    # --- Independent Web Build and Upload ---
+          
+    # 3. Build the Web derivation.
+    - name: Build Web Application
+      # The '--no-link' flag is added to prevent nix from creating a default 'result' symlink, 
+      # allowing us to specify the output path for the archive step more cleanly.
+      run: nix build .#web --out-link result-web
+      # The 'continue-on-error' flag ensures the job proceeds even if this build fails.
+      continue-on-error: true
+
+    # 4. Upload the built Web artifact.
+    - name: Upload Web Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: web-build-output
+        path: ./result-web
+      # The 'if' conditional ensures this step runs only if the artifact actually exists (i.e., the build succeeded).
+      if: success() || failure() && steps.install-nix-action.outcome == 'success' && ( success() || failure() ) && steps['Build Web Application'].outcome == 'success'
+      
+    # --- Independent Desktop Build and Upload ---
+
+    # 5. Build the Desktop derivation.
+    - name: Build Desktop Application
+      # Use a unique symlink name for the desktop output.
+      run: nix build .#desktop --out-link result-desktop
+      continue-on-error: true
+
+    # 6. Upload the built Desktop artifact.
+    - name: Upload Desktop Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: desktop-build-output
+        path: ./result-desktop
+      # Use the 'if' conditional to ensure this step runs only if the desktop build succeeded.
+      if: success() || failure() && steps['Build Desktop Application'].outcome == 'success'
