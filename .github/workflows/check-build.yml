@@ -1,10 +1,13 @@
 # A clear name for the workflow as it appears in the GitHub Actions tab.
-name: "Check that Desktop and Web can be built"
+name: "check-build"
 
 # Defines the events that trigger this workflow.
-on:
-  pull_request:
-  push:
+# commented out the following lines to stop automatic runs:
+# pull_request:
+# push:
+  
+# Keep only this line for manual runs of workflow:
+workflow_dispatch:
 
 jobs:
   # The identifier for the testing job.
