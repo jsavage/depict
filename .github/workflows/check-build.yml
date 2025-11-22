@@ -3,12 +3,12 @@ name: "check-build"
 
 # Defines the events that trigger this workflow.
 on:
-# commented out the following lines to stop automatic runs:
+  # commented out the following lines to stop automatic runs:
   # pull_request:
   # push:
   
-# Keep only this line for manual runs of workflow:
-  workflow_dispatch:
+  # Keep only this line for manual runs of workflow:
+  workflow_dispatch: # <--- CORRECT 2-space indentation
 
 jobs:
   # The identifier for the testing job.
