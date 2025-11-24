@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  depict-builder:
+    build:
+      context: .
+      dockerfile: Dockerfile.working
+    image: depict-builder:latest
+    container_name: depict-builder
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    ports:
+      - "8000:8000"
+    environment:
+      - WEBROOT=/workspace/deployment/dist
+      - PORT=8000
+    stdin_open: true
+    tty: true
+    command: bash
+
+  depict-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.working
+    image: depict-builder:latest
+    container_name: depict-server
+    volumes:
+      - ./deployment:/deployment:ro
+    working_dir: /deployment
+    ports:
+      - "8000:8000"
+    environment:
+      - WEBROOT=/deployment/dist
+      - PORT=8000
+    command: /deployment/dist/depict-server
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+# Usage:
+# 
+# Build and develop:
+#   docker-compose up depict-builder
+#   # Inside container: ./deploy.sh --method local
+#
+# Run production server:
+#   docker-compose up -d depict-server
+#   # Access at http://localhost:8000
+#
+# Stop server:
+#   docker-compose down
+#
+# View logs:
+#   docker-compose logs -f depict-server

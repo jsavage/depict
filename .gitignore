@@ -1,2 +1,7 @@
 target/
 .sl/
+
+# Build system outputs
+diagnostics/
+build_output/
+test_results/

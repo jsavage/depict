@@ -1,0 +1,7 @@
+nightly-2024-05-01
+nightly-2024-06-01
+nightly-2024-07-01
+nightly-2024-08-01
+nightly-2024-09-01
+nightly-2024-10-01
+nightly-2024-11-01
