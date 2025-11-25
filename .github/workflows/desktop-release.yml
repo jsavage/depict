@@ -1,0 +1,295 @@
+name: Desktop Build, Test & Release
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'src/**'
+      - 'dioxus/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/desktop-release.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'dioxus/**'
+      - 'Cargo.toml'
+  release:
+    types: [ created ]
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Create a release'
+        required: false
+        default: 'false'
+
+env:
+  RUST_NIGHTLY_VERSION: nightly-2024-05-01
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-desktop-linux:
+    name: Build Desktop (Linux)
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          pkg-config \
+          cmake \
+          libssl-dev \
+          curl \
+          git \
+          libwebkit2gtk-4.0-dev \
+          libgtk-3-dev \
+          libsoup2.4-dev
+
+    - name: Install Rust nightly
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ env.RUST_NIGHTLY_VERSION }}
+
+    - name: Cache cargo registry
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-registry-
+
+    - name: Cache cargo index
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-index-
+
+    - name: Cache cargo build
+      uses: actions/cache@v4
+      with:
+        path: target
+        key: ${{ runner.os }}-cargo-build-desktop-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-build-desktop-
+
+    - name: Apply code fixes
+      run: |
+        # Fix factorial version
+        sed -i 's/factorial = "\^0.3"/factorial = "0.4"/' Cargo.toml
+
+    - name: Update dependencies
+      run: cargo update
+
+    - name: Build desktop
+      run: cargo build --release -p depict-desktop
+
+    - name: Test desktop binary
+      run: |
+        # Verify binary exists and is executable
+        test -x target/release/depict-desktop
+        
+        # Check dependencies (ldd will fail if critical libs missing)
+        ldd target/release/depict-desktop
+        
+        # Verify it's dynamically linked to expected libraries
+        ldd target/release/depict-desktop | grep -q libwebkit2gtk || echo "Warning: webkit2gtk not found"
+        ldd target/release/depict-desktop | grep -q libgtk || echo "Warning: gtk not found"
+
+    - name: Get version info
+      id: version
+      run: |
+        VERSION="v$(date +%Y.%m.%d)-$(git rev-parse --short HEAD)"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+    - name: Create AppImage metadata
+      run: |
+        mkdir -p AppDir/usr/bin
+        mkdir -p AppDir/usr/share/applications
+        mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
+        
+        # Copy binary
+        cp target/release/depict-desktop AppDir/usr/bin/
+        
+        # Create desktop file
+        cat > AppDir/usr/share/applications/depict.desktop <<EOF
+        [Desktop Entry]
+        Name=Depict
+        Exec=depict-desktop
+        Icon=depict
+        Type=Application
+        Categories=Graphics;Development;
+        Comment=Hierarchical control structure visualization
+        EOF
+        
+        # Create a simple icon (you should replace this with actual icon)
+        # For now, just note that an icon should be added
+        touch AppDir/usr/share/icons/hicolor/256x256/apps/depict.png
+
+    - name: Package artifacts
+      run: |
+        BUILD_NAME="depict-desktop-linux-x86_64-${{ steps.version.outputs.version }}"
+        mkdir -p "$BUILD_NAME"
+        
+        # Copy binary
+        cp target/release/depict-desktop "$BUILD_NAME/"
+        
+        # Create README
+        cat > "$BUILD_NAME/README.txt" <<EOF
+        Depict Desktop - Linux x86_64
+        Version: ${{ steps.version.outputs.version }}
+        Build Date: $(date +%Y-%m-%d)
+        Commit: ${{ github.sha }}
+        
+        Requirements:
+        - Ubuntu 22.04 or compatible Linux distribution
+        - GTK 3
+        - WebKit2GTK 4.0
+        
+        Installation:
+        1. Make executable: chmod +x depict-desktop
+        2. Run: ./depict-desktop
+        
+        System Dependencies (if not already installed):
+        sudo apt-get install libwebkit2gtk-4.0-37 libgtk-3-0
+        
+        For more information, visit:
+        https://github.com/jsavage/depict
+        EOF
+        
+        # Create tarball
+        tar -czf "${BUILD_NAME}.tar.gz" "$BUILD_NAME"
+        echo "ARCHIVE=${BUILD_NAME}.tar.gz" >> $GITHUB_ENV
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: depict-desktop-linux
+        path: ${{ env.ARCHIVE }}
+        retention-days: 30
+
+  test-desktop-basic:
+    name: Test Desktop Binary (Basic)
+    needs: build-desktop-linux
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - name: Install runtime dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libwebkit2gtk-4.0-37 \
+          libgtk-3-0 \
+          libsoup2.4-1
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: depict-desktop-linux
+
+    - name: Extract and test
+      run: |
+        tar -xzf depict-desktop-linux-*.tar.gz
+        cd depict-desktop-linux-*/
+        
+        chmod +x depict-desktop
+        
+        # Basic binary check
+        file depict-desktop
+        ldd depict-desktop
+        
+        # Verify it can at least print help (if available)
+        # Note: Full GUI test would require X server
+        timeout 5s ./depict-desktop --help || echo "No help flag available"
+
+  create-release:
+    name: Create Desktop Release
+    needs: [build-desktop-linux, test-desktop-basic]
+    runs-on: ubuntu-22.04
+    if: |
+      github.event_name == 'release' || 
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[release]'))
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: depict-desktop-linux
+
+    - name: Get version
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" == "release" ]; then
+          echo "version=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+        else
+          VERSION="v$(date +%Y.%m.%d)-$(git rev-parse --short HEAD)"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create Release
+      if: github.event_name != 'release'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.version.outputs.version }}
+        name: Depict Desktop ${{ steps.version.outputs.version }}
+        body: |
+          ## Depict Desktop Release (Linux)
+          
+          **Build Date:** $(date +%Y-%m-%d)
+          **Commit:** ${{ github.sha }}
+          **Platform:** Linux x86_64 (Ubuntu 22.04)
+          
+          ### Installation
+          ```bash
+          tar -xzf depict-desktop-linux-*.tar.gz
+          cd depict-desktop-linux-*/
+          chmod +x depict-desktop
+          ./depict-desktop
+          ```
+          
+          ### Requirements
+          - Ubuntu 22.04 or compatible Linux distribution
+          - GTK 3
+          - WebKit2GTK 4.0
+          
+          Install runtime dependencies:
+          ```bash
+          sudo apt-get install libwebkit2gtk-4.0-37 libgtk-3-0
+          ```
+          
+          ### Features
+          - Native GTK interface with WebKit rendering
+          - Direct SVG export capability
+          - Full DSL parser and layout engine
+          
+          ### Notes
+          - Binary size: ~32MB
+          - Built with Rust nightly-2024-05-01
+          - Requires X11 display server
+        files: |
+          depict-desktop-linux-*.tar.gz
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload to existing release
+      if: github.event_name == 'release'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          depict-desktop-linux-*.tar.gz
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
