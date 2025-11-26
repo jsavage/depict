@@ -1,0 +1,271 @@
+name: Build Depict Release
+
+on:
+  workflow_dispatch:  # Manual trigger only
+    inputs:
+      rust_nightly:
+        description: 'Rust nightly version to use'
+        required: false
+        default: 'nightly-2024-05-01'
+        type: choice
+        options:
+          - nightly-2024-05-01
+          - nightly-2024-06-01
+          - nightly-2024-07-01
+          - nightly-2024-08-01
+          - nightly-2024-09-01
+          - nightly-2024-10-01
+          - nightly-2024-11-01
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  build:
+    name: Build All Components
+    runs-on: ubuntu-22.04  # Critical: Must be 22.04 for webkit2gtk-4.0
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          pkg-config \
+          cmake \
+          libssl-dev \
+          libwebkit2gtk-4.0-dev \
+          libgtk-3-dev \
+          libsoup2.4-dev
+    
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ github.event.inputs.rust_nightly || 'nightly-2024-05-01' }}
+        targets: wasm32-unknown-unknown
+    
+    - name: Cache cargo registry
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+    
+    - name: Cache cargo index
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+    
+    - name: Cache cargo build
+      uses: actions/cache@v3
+      with:
+        path: target
+        key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+    
+    - name: Install build tools
+      run: |
+        cargo install trunk wasm-bindgen-cli --locked
+    
+    - name: Apply code fixes
+      run: |
+        # Fix server Label pattern
+        sed -i 's/Label{text, hpos, width, vpos}/Label{text, hpos, width, vpos, ..}/g' server/src/main.rs
+        
+        # Fix factorial dependency
+        sed -i 's/factorial = "\^0.3"/factorial = "0.4"/' Cargo.toml
+        
+        # Fix server binding address
+        sed -i 's/\[127, 0, 0, 1\]/\[0, 0, 0, 0\]/g' server/src/main.rs
+    
+    - name: Update dependencies
+      run: cargo update
+    
+    - name: Build desktop
+      run: |
+        echo "::group::Building desktop"
+        cargo build --release -p depict-desktop
+        echo "::endgroup::"
+    
+    - name: Build server
+      run: |
+        echo "::group::Building server"
+        cargo build --release -p depict-server
+        echo "::endgroup::"
+    
+    - name: Build web WASM
+      run: |
+        echo "::group::Building web WASM"
+        cargo build --release -p depict-web --target wasm32-unknown-unknown
+        echo "::endgroup::"
+    
+    - name: Build web assets
+      run: |
+        echo "::group::Building web assets with trunk"
+        cd web
+        trunk build --release
+        cd ..
+        echo "::endgroup::"
+    
+    - name: Organize artifacts
+      run: |
+        mkdir -p release/dist
+        
+        # Copy binaries
+        cp target/release/depict-desktop release/dist/
+        cp target/release/depict-server release/dist/
+        
+        # Copy web assets
+        cp -r web/dist/* release/dist/
+        
+        # Create manifest
+        cat > release/MANIFEST.txt << EOF
+        Depict Build Artifacts
+        ======================
+        
+        Build Date: $(date -Iseconds)
+        Git Commit: ${{ github.sha }}
+        Git Ref: ${{ github.ref }}
+        Rust Version: $(rustc --version)
+        
+        Components:
+        - Desktop GUI: depict-desktop ($(stat -c%s target/release/depict-desktop | numfmt --to=iec-i)B)
+        - Server: depict-server ($(stat -c%s target/release/depict-server | numfmt --to=iec-i)B)
+        - Web WASM: depict-web-*_bg.wasm
+        
+        To run server:
+          WEBROOT=./dist ./dist/depict-server
+        
+        Server will listen on http://0.0.0.0:8000
+        EOF
+        
+        # Create run script
+        cat > release/run_server.sh << 'EOF'
+        #!/usr/bin/env bash
+        SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+        WEBROOT="$SCRIPT_DIR/dist" PORT=8000 "$SCRIPT_DIR/dist/depict-server"
+        EOF
+        chmod +x release/run_server.sh
+        
+        # Show what we built
+        ls -lh release/dist/
+    
+    - name: Create tarball
+      run: |
+        tar -czf depict-release-${{ github.sha }}.tar.gz -C release .
+        ls -lh depict-release-${{ github.sha }}.tar.gz
+    
+    - name: Upload desktop binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: depict-desktop-${{ github.sha }}
+        path: target/release/depict-desktop
+        retention-days: 90
+    
+    - name: Upload server binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: depict-server-${{ github.sha }}
+        path: target/release/depict-server
+        retention-days: 90
+    
+    - name: Upload web assets
+      uses: actions/upload-artifact@v4
+      with:
+        name: depict-web-${{ github.sha }}
+        path: web/dist/
+        retention-days: 90
+    
+    - name: Upload complete release
+      uses: actions/upload-artifact@v4
+      with:
+        name: depict-complete-release-${{ github.sha }}
+        path: |
+          release/
+          depict-release-${{ github.sha }}.tar.gz
+        retention-days: 90
+    
+    - name: Generate build summary
+      run: |
+        cat >> $GITHUB_STEP_SUMMARY << EOF
+        # ✅ Build Successful!
+        
+        ## Artifacts
+        
+        | Component | Size | Download |
+        |-----------|------|----------|
+        | Desktop | $(stat -c%s target/release/depict-desktop | numfmt --to=iec-i)B | depict-desktop-${{ github.sha }} |
+        | Server | $(stat -c%s target/release/depict-server | numfmt --to=iec-i)B | depict-server-${{ github.sha }} |
+        | Web Assets | $(du -sh web/dist | cut -f1) | depict-web-${{ github.sha }} |
+        | Complete | $(stat -c%s depict-release-${{ github.sha }}.tar.gz | numfmt --to=iec-i)B | depict-complete-release-${{ github.sha }} |
+        
+        ## Build Info
+        
+        - **Rust Version:** $(rustc --version)
+        - **Commit:** ${{ github.sha }}
+        - **Build Time:** $(date -Iseconds)
+        - **OS:** Ubuntu 22.04
+        
+        ## Usage
+        
+        Download the complete release artifact and extract:
+        
+        \`\`\`bash
+        tar -xzf depict-release-*.tar.gz
+        cd release
+        ./run_server.sh
+        \`\`\`
+        
+        Access at: http://localhost:8000
+        EOF
+
+  test:
+    name: Test Build
+    needs: build
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: depict-complete-release-${{ github.sha }}
+    
+    - name: Test server starts
+      run: |
+        cd release
+        chmod +x dist/depict-server
+        chmod +x run_server.sh
+        
+        # Start server in background
+        WEBROOT=./dist PORT=8000 ./dist/depict-server &
+        SERVER_PID=$!
+        
+        # Wait for server to start
+        sleep 5
+        
+        # Test if server responds
+        if curl -f http://localhost:8000 > /dev/null 2>&1; then
+          echo "✅ Server is responding"
+        else
+          echo "❌ Server is not responding"
+          exit 1
+        fi
+        
+        # Check if HTML contains expected content
+        if curl -s http://localhost:8000 | grep -q "depict-web"; then
+          echo "✅ Web interface loaded correctly"
+        else
+          echo "❌ Web interface not loading"
+          exit 1
+        fi
+        
+        # Stop server
+        kill $SERVER_PID
+        
+        echo "✅ All tests passed!"
