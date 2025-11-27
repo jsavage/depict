@@ -134,7 +134,7 @@ Depict Web - Static Deployment
 Version: ${{ steps.info.outputs.version }}
 Build Date: $(date +%Y-%m-%d)
 Commit: ${{ github.sha }}
-
+EOF  # <-- This line must be added and MUST NOT be indented.
 ═══════════════════════════════════════
 FILE CONTENTS
 ═══════════════════════════════════════
