@@ -31,11 +31,11 @@ jobs:
   build-web:
     name: Build Web Static Files
     runs-on: ubuntu-22.04
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Install system dependencies
       run: |
         sudo apt-get update
@@ -46,13 +46,13 @@ jobs:
           libssl-dev \
           curl \
           git
-          
+
     - name: Install Rust nightly
       uses: dtolnay/rust-toolchain@master
       with:
         toolchain: ${{ env.RUST_NIGHTLY_VERSION }}
         targets: wasm32-unknown-unknown
-        
+
     - name: Cache cargo registry
       uses: actions/cache@v4
       with:
@@ -60,7 +60,7 @@ jobs:
         key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: |
           ${{ runner.os }}-cargo-registry-
-          
+
     - name: Cache cargo index
       uses: actions/cache@v4
       with:
@@ -68,7 +68,7 @@ jobs:
         key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: |
           ${{ runner.os }}-cargo-index-
-          
+
     - name: Cache cargo build
       uses: actions/cache@v4
       with:
@@ -76,134 +76,135 @@ jobs:
         key: ${{ runner.os }}-cargo-build-web-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: |
           ${{ runner.os }}-cargo-build-web-
-          
+
     - name: Install trunk and wasm-bindgen-cli
       run: |
         cargo install --locked trunk || true
         cargo install --locked wasm-bindgen-cli || true
-        
+
     - name: Apply code fixes
       run: |
         # Fix factorial version
         sed -i 's/factorial = "\^0.3"/factorial = "0.4"/' Cargo.toml
-        
+
     - name: Update dependencies
       run: cargo update
-      
+
     - name: Build web WASM
       run: cargo build --release -p depict-web --target wasm32-unknown-unknown
-      
+
     - name: Build web assets with trunk
       run: |
         cd web
         trunk build --release
         cd ..
-        
+
     - name: Get version and file info
       id: info
       run: |
         VERSION="v$(date +%Y.%m.%d)-$(git rev-parse --short HEAD)"
         echo "version=$VERSION" >> $GITHUB_OUTPUT
-        
+
         # Get file sizes
         WASM_SIZE=$(find web/dist -name "*.wasm" -exec du -h {} \; | cut -f1)
         JS_SIZE=$(find web/dist -name "depict-web*.js" -exec du -h {} \; | cut -f1)
         HTML_SIZE=$(du -h web/dist/index.html | cut -f1)
         CSS_SIZE=$(find web/dist -name "*.css" -exec du -h {} \; | cut -f1)
-        
+
         echo "wasm_size=$WASM_SIZE" >> $GITHUB_OUTPUT
         echo "js_size=$JS_SIZE" >> $GITHUB_OUTPUT
         echo "html_size=$HTML_SIZE" >> $GITHUB_OUTPUT
         echo "css_size=$CSS_SIZE" >> $GITHUB_OUTPUT
-        
+
     - name: Organize static release
       run: |
         BUILD_NAME="depict-web-static-${{ steps.info.outputs.version }}"
         mkdir -p "$BUILD_NAME"
-        
+
         # Copy only the static files needed
         cp web/dist/index.html "$BUILD_NAME/"
         cp web/dist/*.wasm "$BUILD_NAME/"
         cp web/dist/depict-web*.js "$BUILD_NAME/"
         cp web/dist/*.css "$BUILD_NAME/" 2>/dev/null || true
-        
+
         # Create deployment README
         # NOTE: The Heredoc (<<EOF) content MUST be terminated by an unindented EOF
         cat > "$BUILD_NAME/README.txt" <<EOF
-Depict Web - Static Deployment
-Version: ${{ steps.info.outputs.version }}
-Build Date: $(date +%Y-%m-%d)
-Commit: ${{ github.sha }}
-═══════════════════════════════════════FILE CONTENTS═══════════════════════════════════════
-This archive contains everything needed to deploy Depict as a static web application:
-  index.html          Entry point (HTML)
-  depict-web-*.wasm   WebAssembly module (${{ steps.info.outputs.wasm_size }})
-  depict-web-*.js     JavaScript bindings (${{ steps.info.outputs.js_size }})
-  index-*.css         Stylesheets (${{ steps.info.outputs.css_size }})
-Total size: ~5 MB
-═══════════════════════════════════════DEPLOYMENT OPTIONS═══════════════════════════════════════
-Option 1: GitHub Pages
-  1. Upload files to docs/ or gh-pages branch
-  2. Enable GitHub Pages in repository settings
-  3. Done!
-Option 2: Static Hosting (Netlify, Vercel, etc.)
-  1. Drag and drop this folder
-  2. Deploy automatically
-Option 3: Your Own Web Server
-  Apache:
-    - Copy files to /var/www/html/depict/
-    - Add .htaccess for SPA routing (see below)
-    Nginx:
-    - Copy files to web root
-    - Configure to serve index.html for all routes
-    Python (for testing):
-    - cd into this folder
-    - python3 -m http.server 8080
-    - Visit http://localhost:8080
-═══════════════════════════════════════APACHE .htaccess═══════════════════════════════════════
-Create .htaccess in the deployment folder:
-RewriteEngine On
-RewriteBase /
-RewriteRule ^index\.html$ - [L]
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule . /index.html [L]
-AddType application/wasm .wasm
-═══════════════════════════════════════NGINX CONFIGURATION═══════════════════════════════════════
-server {
-    listen 80;
-    server_name example.com;
-    root /path/to/depict;
-    
-    location / {
-        try_files \$uri \$uri/ /index.html;
-    }
-    
-    types {
-        application/wasm wasm;
-    }
-}
-═══════════════════════════════════════BROWSER REQUIREMENTS═══════════════════════════════════════
-Requires a modern browser with WebAssembly support:
-  - Chrome/Edge 57+
-  - Firefox 52+
-  - Safari 11+
-═══════════════════════════════════════NO SERVER REQUIRED═══════════════════════════════════════
-This is a pure static deployment. All computation happens in the browser. You don't need:
-  - Node.js
-  - Python
-  - Ruby
-  - PHP
-  - Any backend server
-Just upload the files and serve them. That's it!
-═══════════════════════════════════════For more information:
-https://github.com/jsavage/depict
+        Depict Web - Static Deployment
+        Version: ${{ steps.info.outputs.version }}
+        Build Date: $(date +%Y-%m-%d)
+        Commit: ${{ github.sha }}
+        ═══════════════════════════════════════FILE CONTENTS═══════════════════════════════════════
+        This archive contains everything needed to deploy Depict as a static web application:
+          index.html          Entry point (HTML)
+          depict-web-*.wasm   WebAssembly module (${{ steps.info.outputs.wasm_size }})
+          depict-web-*.js     JavaScript bindings (${{ steps.info.outputs.js_size }})
+          index-*.css         Stylesheets (${{ steps.info.outputs.css_size }})
+        Total size: ~5 MB
+        ═══════════════════════════════════════DEPLOYMENT OPTIONS═══════════════════════════════════════
+        Option 1: GitHub Pages
+          1. Upload files to docs/ or gh-pages branch
+          2. Enable GitHub Pages in repository settings
+          3. Done!
+        Option 2: Static Hosting (Netlify, Vercel, etc.)
+          1. Drag and drop this folder
+          2. Deploy automatically
+        Option 3: Your Own Web Server
+          Apache:
+            - Copy files to /var/www/html/depict/
+            - Add .htaccess for SPA routing (see below)
+            Nginx:
+            - Copy files to web root
+            - Configure to serve index.html for all routes
+            Python (for testing):
+            - cd into this folder
+            - python3 -m http.server 8080
+            - Visit http://localhost:8080
+        ═══════════════════════════════════════APACHE .htaccess═══════════════════════════════════════
+        Create .htaccess in the deployment folder:
+        RewriteEngine On
+        RewriteBase /
+        RewriteRule ^index\.html$ - [L]
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteCond %{REQUEST_FILENAME} !-d
+        RewriteRule . /index.html [L]
+        AddType application/wasm .wasm
+        ═══════════════════════════════════════NGINX CONFIGURATION═══════════════════════════════════════
+        server {
+            listen 80;
+            server_name example.com;
+            root /path/to/depict;
+
+            location / {
+                try_files \$uri \$uri/ /index.html;
+            }
+
+            types {
+                application/wasm wasm;
+            }
+        }
+        ═══════════════════════════════════════BROWSER REQUIREMENTS═══════════════════════════════════════
+        Requires a modern browser with WebAssembly support:
+          - Chrome/Edge 57+
+          - Firefox 52+
+          - Safari 11+
+        ═══════════════════════════════════════NO SERVER REQUIRED═══════════════════════════════════════
+        This is a pure static deployment. All computation happens in the browser. You don't need:
+          - Node.js
+          - Python
+          - Ruby
+          - PHP
+          - Any backend server
+        Just upload the files and serve them. That's it!
+        ═══════════════════════════════════════For more information:
+        https://github.com/jsavage/depict
 EOF
+
         # Create tarball
         tar -czf "${BUILD_NAME}.tar.gz" "$BUILD_NAME"
         echo "ARCHIVE=${BUILD_NAME}.tar.gz" >> $GITHUB_ENV
         echo "BUILD_DIR=$BUILD_NAME" >> $GITHUB_ENV
-        
+
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -217,13 +218,13 @@ EOF
     name: Test Static Deployment
     needs: build-web
     runs-on: ubuntu-22.04
-    
+
     steps:
     - name: Download build artifacts
       uses: actions/download-artifact@v4
       with:
         name: depict-web-static
-        
+
     - name: Extract files and set build path 🛠️
       id: extract
       run: |
@@ -231,64 +232,64 @@ EOF
         # Find the extracted directory name and set it as an env variable
         BUILD_DIR=$(find . -maxdepth 1 -type d -name "depict-web-static-*" | head -n 1 | sed 's/.\///')
         echo "BUILD_DIR=$BUILD_DIR" >> $GITHUB_ENV
-        
+
     - name: Install test dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y curl
-        
-    - name: Test with Python HTTP server 
+
+    - name: Test with Python HTTP server
       run: |
         cd ${{ env.BUILD_DIR }}
-        
+
         # Start server in background
         python3 -m http.server 8080 &
         SERVER_PID=$!
         echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
-        
+
         # Wait for server to start
         sleep 3
-        
+
     - name: Validate deployment 🛠️
       run: |
         cd ${{ env.BUILD_DIR }}
-        
+
         # Get the dynamically generated filenames (e.g., hash in name)
         WASM_FILE=$(find . -maxdepth 1 -name "*.wasm" | head -n 1 | sed 's/.\///')
         JS_FILE=$(find . -maxdepth 1 -name "depict-web*.js" | head -n 1 | sed 's/.\///')
-        
+
         # Test root endpoint
         echo "Testing index.html..."
         curl -f http://localhost:8080/ || exit 1
-        
+
         # Test WASM file by its discovered filename
         echo "Testing WASM module: $WASM_FILE"
         curl -f -I http://localhost:8080/$WASM_FILE || exit 1
-        
+
         # Test JS file by its discovered filename
         echo "Testing JS bindings: $JS_FILE"
         curl -f -I http://localhost:8080/$JS_FILE || exit 1
-        
+
         echo "✓ All static files accessible"
-        
+
     - name: Test WASM loading
       run: |
         RESPONSE=$(curl -s http://localhost:8080/)
-        
+
         if echo "$RESPONSE" | grep -q "depict-web"; then
           echo "✓ Main page contains WASM references"
         else
           echo "✗ Main page missing WASM references"
           exit 1
         fi
-        
+
         if echo "$RESPONSE" | grep -q "wasm"; then
           echo "✓ Page references WebAssembly"
         else
           echo "✗ Page missing WebAssembly references"
           exit 1
         fi
-        
+
     - name: Cleanup
       if: always()
       run: |
@@ -303,19 +304,19 @@ EOF
     needs: [build-web, test-web]
     runs-on: ubuntu-22.04
     if: |
-      github.event_name == 'release' || 
+      github.event_name == 'release' ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true') ||
       (github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[release]'))
-      
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Download build artifacts
       uses: actions/download-artifact@v4
       with:
         name: depict-web-static
-        
+
     - name: Get version
       id: version
       run: |
@@ -325,7 +326,7 @@ EOF
           VERSION="v$(date +%Y.%m.%d)-$(git rev-parse --short HEAD)"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
         fi
-        
+
     - name: Create Release
       if: github.event_name != 'release'
       uses: softprops/action-gh-release@v1
@@ -334,30 +335,30 @@ EOF
         name: Depict Web ${{ steps.version.outputs.version }}
         body: |
           ## Depict Web - Static Deployment
-          
+
           **Build Date:** $(date +%Y-%m-%d)
           **Commit:** ${{ github.sha }}
           **Type:** Pure static web application (client-side only)
-          
+
           ### 📦 What's Included
-          
+
           This release contains static files for deploying Depict as a web application:
           - `index.html` - Entry point
           - `depict-web-*.wasm` - WebAssembly module (~4.7 MB)
           - `depict-web-*.js` - JavaScript bindings (~36 KB)
           - `index-*.css` - Stylesheets
-          
+
           **Total size:** ~5 MB
-          
+
           ### 🚀 Quick Deploy
-          
+
           **GitHub Pages:**
           ```bash
           tar -xzf depict-web-static-*.tar.gz
           cp -r depict-web-static-*/* docs/
           git add docs/ && git commit -m "Deploy" && git push
           ```
-          
+
           **Python (testing):**
           ```bash
           tar -xzf depict-web-static-*.tar.gz
@@ -365,45 +366,45 @@ EOF
           python3 -m http.server 8080
           # Visit http://localhost:8080
           ```
-          
+
           **Netlify/Vercel:**
           - Extract archive
           - Drag & drop folder to deployment
           - Done!
-          
+
           ### 📋 Requirements
-          
+
           - **Server:** Any static web host (Apache, Nginx, Python, or cloud hosting)
           - **Browser:** Modern browser with WebAssembly support
             - Chrome/Edge 57+
             - Firefox 52+
             - Safari 11+
-          
+
           ### ℹ️ No Server-Side Processing
-          
-          This is a **pure static deployment**. All computation happens in the browser. 
+
+          This is a **pure static deployment**. All computation happens in the browser.
           No Node.js, Python, or backend server required!
-          
+
           ### 📚 Documentation
-          
+
           See included `README.txt` for detailed deployment instructions including:
           - Apache `.htaccess` configuration
           - Nginx server block configuration
           - Various hosting platform guides
-          
+
           ### 🔗 Links
-          
+
           - [Repository](https://github.com/jsavage/depict)
           - [Upstream](https://github.com/mstone/depict)
           - [Online Demo](https://mstone.info/depict/)
-          
+
         files: |
           depict-web-static-*.tar.gz
         draft: false
         prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        
+
     - name: Upload to existing release
       if: github.event_name == 'release'
       uses: softprops/action-gh-release@v1
