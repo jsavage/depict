@@ -199,7 +199,6 @@ jobs:
         ═══════════════════════════════════════For more information:
         https://github.com/jsavage/depict
 EOF
-
         # Create tarball
         tar -czf "${BUILD_NAME}.tar.gz" "$BUILD_NAME"
         echo "ARCHIVE=${BUILD_NAME}.tar.gz" >> $GITHUB_ENV
