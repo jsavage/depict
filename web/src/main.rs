@@ -14,6 +14,9 @@ use indoc::indoc;
 
 use tracing::{event, Level};
 
+// --- START: C SHIMS (Kept for compatibility with C dependencies like OSQP) ---
+// These functions are critical for running the C-based parts of the 'depict' library in WASM.
+
 #[no_mangle]
 unsafe extern "C" fn malloc(size: ::std::os::raw::c_ulong) -> *mut ::std::os::raw::c_void {
     use std::alloc::{alloc, Layout};
@@ -52,10 +55,6 @@ unsafe extern "C" fn free(ptr: *mut ::std::os::raw::c_void) {
 
 #[no_mangle]
 unsafe extern "C" fn printf(format: *const ::std::os::raw::c_char, mut args: ...) -> ::std::os::raw::c_int {
-    // use std::ffi::CStr;
-    // let c_str = unsafe { CStr::from_ptr(format_string) };
-    // let c_str = c_str.to_string_lossy();
-    // return c_str.len().try_into().unwrap();
     let mut s = String::new();
     #[cfg(target_family="wasm")]
     let format = format as *const u8;
@@ -144,57 +143,71 @@ unsafe extern "C" fn __tolower(_: __darwin_ct_rune_t) -> __darwin_ct_rune_t {
 unsafe extern "C" fn __toupper(_: __darwin_ct_rune_t) -> __darwin_ct_rune_t {
     todo!()
 }
+// --- END: C SHIMS ---
 
 const PLACEHOLDER: &str = indoc!("
     person microwave food: open, start, stop / beep : heat
     person food: stir
 ");
 
-pub struct AppProps {
+// --- NEW: Processing Status Enum ---
+#[derive(PartialEq)]
+enum ProcessingState {
+    Idle,
+    Processing,
+    Success,
+    Error(String),
 }
+
+pub struct AppProps {}
 
 pub fn app(cx: Scope<AppProps>) -> Element {
 
     let model = use_state(&cx, || String::from(PLACEHOLDER));
 
-    // let drawing = use_state(&cx, || serde_json::from_str::<DrawResp>(PLACEHOLDER_DRAWING).unwrap().drawing);
+    // NEW: Initialize the status state
+    let status = use_state(&cx, || ProcessingState::Idle);
+
     let drawing = use_state(&cx, || draw(PLACEHOLDER.into()).unwrap());
 
     let drawing_client = use_coroutine(&cx, |mut rx: UnboundedReceiver<String>| {
-        to_owned![drawing];
+        // NEW: Clone the status state handle into the coroutine
+        to_owned![drawing, status];
         async move {
-            while let Some(model) = rx.next().await {
-                let nodes = if model.trim().is_empty() {
+            while let Some(model_text) = rx.next().await {
+                
+                // STEP 1: Indicate processing started
+                status.set(ProcessingState::Processing); 
+
+                let nodes = if model_text.trim().is_empty() {
                     Ok(Ok(Drawing::default()))
                 } else {
                     catch_unwind(|| {
-                        draw(model.clone())
+                        depict::graph_drawing::frontend::dom::draw(model_text.clone())
                     })
                 };
+
+                // STEP 2: Handle results and update status
                 match nodes {
                     Ok(Ok(drawing_nodes)) => {
                         drawing.set(drawing_nodes);
+                        status.set(ProcessingState::Success);
                     },
-                    _ => {},
+                    // Handle syntax errors from the draw function
+                    Ok(Err(e)) => {
+                        status.set(ProcessingState::Error(format!("Syntax Error: {:?}", e)));
+                    },
+                    // Handle panics (crashes)
+                    Err(_) => {
+                        status.set(ProcessingState::Error("The renderer crashed.".to_string()));
+                    },
                 }
             }
         }
     });
 
-    // let (drawing, nodes) = match drawing_fut.value() {
-    //     Some(Some(drawing)) => (Some(drawing), render(cx, drawing.clone())),
-    //     Some(None) => (None, cx.render(rsx!("loading..."))),
-    //     _ => (None, cx.render(rsx!("error"))),
-    // };
     let nodes = render(cx, drawing.get().clone());
-
     let viewbox_width = drawing.viewbox_width;
-    // let viewbox_width = 1024.0;
-    // let _crossing_number = cx.render(rsx!(match drawing.get().crossing_number {
-    //     Some(cn) => rsx!(span { "{cn}" }),
-    //     None => rsx!(div{}),
-    // }));
-
     let data_svg = as_data_svg(drawing.get().clone(), true);
     let syntax_guide = depict::graph_drawing::frontend::dioxus::syntax_guide(cx)?;
 
@@ -203,15 +216,31 @@ pub fn app(cx: Scope<AppProps>) -> Element {
         div {
             // key: "editor",
             class: "main_editor",
+            // INCLUDED LAYOUT FIXES (Centering/Width)
+            style: "width: 100%; max-width: 800px; margin: 0 auto; padding: 1em;",
+
             div {
                 div {
                     // key: "editor_label",
                     "Model"
                 }
+
+                // NEW: Status Indicator Display
+                div {
+                    style: "margin-bottom: 5px; font-weight: bold;",
+                    match status.get() {
+                        ProcessingState::Idle => rsx!(span { color: "gray", "Ready" }),
+                        ProcessingState::Processing => rsx!(span { color: "blue", "Processing..." }),
+                        ProcessingState::Success => rsx!(span { color: "green", "Diagram Updated" }),
+                        ProcessingState::Error(msg) => rsx!(span { color: "red", "ERROR: {msg}" }),
+                    }
+                }
+                
                 div {
                     // key: "editor_editor",
                     textarea {
-                        style: "box-sizing: border-box; width: calc(100% - 2em); border-width: 1px; border-color: #000;",
+                        // INCLUDED LAYOUT FIXES (Full Width/Vertical Resize)
+                        style: "box-sizing: border-box; width: 100%; border-width: 1px; border-color: #000; resize: vertical;",
                         rows: "10",
                         autocomplete: "off",
                         // autocorrect: "off",
@@ -318,5 +347,3 @@ fn main() {
         dioxus_web::Config::new()
     );
 }
-
-
