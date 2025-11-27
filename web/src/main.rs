@@ -206,13 +206,13 @@ pub fn app(cx: Scope<AppProps>) -> Element {
             div {
                 div {
                     // key: "editor_label",
-                    "Model"
+                    "Type your specification below.  See below for Syntax and examples.  Drag the corner to expand it"
                 }
                 div {
                     // key: "editor_editor",
                     textarea {
                         style: "box-sizing: border-box; width: calc(100% - 2em); border-width: 1px; border-color: #000;",
-                        rows: "10",
+                        rows: "6",
                         autocomplete: "off",
                         // autocorrect: "off",
                         "autocapitalize": "off",
