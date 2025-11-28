@@ -55,8 +55,10 @@ jobs:
       image: ghcr.io/jsavage/depict-builder:ubuntu22.04-nightly-2024-05-01
       # Credentials to pull from GitHub Container Registry
       credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+        username: jsavage # ${{ github.actor }}
+        # Use the PAT secret for the password
+        password: ${{ secrets.GHCR_PAT_READ }}
+        # password: ${{}}  # secrets.GITHUB_TOKEN
     
     steps:
     # Step 1: Get the source code
