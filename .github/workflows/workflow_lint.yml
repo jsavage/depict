@@ -18,7 +18,7 @@ jobs:
       # 🌟 The recommended validation step 🌟
       - name: Validate GitHub Actions Workflow Files
         # Using a reliable validator for GHA schema checks
-        uses: rhysd/action-validator@v1
+        uses: jazzsequence/github-action-validator@v1
         with:
           # Check all workflow files in the repository
           recursive: true
