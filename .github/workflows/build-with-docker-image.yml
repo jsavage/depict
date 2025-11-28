@@ -44,6 +44,10 @@ jobs:
   build-in-container:
     name: Build Using Docker Image
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read # Already needed for the checkout step
+      packages: read # <--- CRITICAL: Grants the token permission to pull the image
     
     # Use your pre-built container image
     # This contains all dependencies already installed
