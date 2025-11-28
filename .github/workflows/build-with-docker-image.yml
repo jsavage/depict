@@ -81,25 +81,33 @@ jobs:
         # sed -i 's/Label{text, hpos, width, vpos}/Label{text, hpos, width, vpos, ..}/g' server/src/main.rs || true
         
         # Fix 2: Update factorial dependency version
-        sed -i 's/factorial = "\^0.3"/factorial = "0.4"/' Cargo.toml || true
+        # sed -i 's/factorial = "\^0.3"/factorial = "0.4"/' Cargo.toml || true
         
         # Fix 3: Server binding address - allow external connections (0.0.0.0 instead of 127.0.0.1)
         # sed -i 's/\[127, 0, 0, 1\]/\[0, 0, 0, 0\]/g' server/src/main.rs || true
         
-        echo "Code fixes applied successfully"
+        #echo "Code fixes applied successfully"
 
-    # ⭐ NEW STEP ADDED HERE TO RESOLVE RUSTUP ERROR ⭐
+    # Step 3: Ensure correct dependency versions
+    - name: Ensure correct dependency versions
+      run: |
+        echo "Checking and fixing dependency versions..."
+    
+    # Ensure factorial is version 0.4
+        sed -i 's/factorial = "[^"]*"/factorial = "0.4"/' Cargo.toml
+    
+        echo "✅ Dependency versions set"
+        grep factorial Cargo.toml
+
+    # Step 3.5: Set Rust Toolchain
     - name: Set Rust Toolchain to Specific Nightly
       run: |
-        # This explicitly tells rustup to use the version that was current on that date
-        rustup default nightly-2024-05-01     
-   
-    # Step 4: Update Rust dependencies to latest compatible versions
+        rustup default nightly-2024-05-01
+
+    # Step 4: Update dependencies
     - name: Update dependencies
       run: |
-        echo "Updating Cargo dependencies..."
         cargo update
-        echo "Dependencies updated"
     
     # Step 5: Build desktop GUI component
     - name: Build desktop GUI
