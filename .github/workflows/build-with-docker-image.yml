@@ -93,7 +93,7 @@ jobs:
       run: |
         echo "Checking and fixing dependency versions..."
     
-    # Ensure factorial is version 0.4
+        # Ensure factorial is version 0.4
         sed -i 's/factorial = "[^"]*"/factorial = "0.4"/' Cargo.toml
     
         echo "✅ Dependency versions set"
