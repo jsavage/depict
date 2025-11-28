@@ -70,15 +70,15 @@ jobs:
     - name: Apply code fixes
       run: |
         echo "Applying code fixes..."
-        
+        # some disabled as alreday incorporated - retain pattern as a template
         # Fix 1: Server Label pattern - add missing 'classes' field
-        sed -i 's/Label{text, hpos, width, vpos}/Label{text, hpos, width, vpos, ..}/g' server/src/main.rs || true
+        # sed -i 's/Label{text, hpos, width, vpos}/Label{text, hpos, width, vpos, ..}/g' server/src/main.rs || true
         
         # Fix 2: Update factorial dependency version
-        sed -i 's/factorial = "\^0.3"/factorial = "0.4"/' Cargo.toml || true
+        # sed -i 's/factorial = "\^0.3"/factorial = "0.4"/' Cargo.toml || true
         
         # Fix 3: Server binding address - allow external connections (0.0.0.0 instead of 127.0.0.1)
-        sed -i 's/\[127, 0, 0, 1\]/\[0, 0, 0, 0\]/g' server/src/main.rs || true
+        # sed -i 's/\[127, 0, 0, 1\]/\[0, 0, 0, 0\]/g' server/src/main.rs || true
         
         echo "Code fixes applied successfully"
     
