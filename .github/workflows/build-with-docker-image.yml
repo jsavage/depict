@@ -87,7 +87,13 @@ jobs:
         # sed -i 's/\[127, 0, 0, 1\]/\[0, 0, 0, 0\]/g' server/src/main.rs || true
         
         echo "Code fixes applied successfully"
-    
+
+    # ⭐ NEW STEP ADDED HERE TO RESOLVE RUSTUP ERROR ⭐
+    - name: Set Rust Toolchain to Specific Nightly
+      run: |
+        # This explicitly tells rustup to use the version that was current on that date
+        rustup default nightly-2024-05-01     
+   
     # Step 4: Update Rust dependencies to latest compatible versions
     - name: Update dependencies
       run: |
