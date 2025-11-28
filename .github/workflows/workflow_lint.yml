@@ -1,0 +1,24 @@
+name: ⚙️ Workflow Syntax Check
+
+on:
+  # Trigger this validation workflow only when YAML files change
+  push:
+    paths:
+      - '.github/workflows/**.yml'
+  pull_request:
+    paths:
+      - '.github/workflows/**.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      # 🌟 The recommended validation step 🌟
+      - name: Validate GitHub Actions Workflow Files
+        # Using a reliable validator for GHA schema checks
+        uses: rhysd/action-validator@v1
+        with:
+          # Check all workflow files in the repository
+          recursive: true

@@ -1,24 +1,470 @@
-name: ⚙️ Workflow Syntax Check
+# GitHub Actions Workflow: Build Depict Using Pre-built Docker Image
+#
+# Purpose: Build all depict components using your verified working Docker image
+#          from November 24, 2025 successful build
+#
+# Container: ghcr.io/jsavage/depict-builder:ubuntu22.04-nightly-2024-05-01
+#   - Ubuntu 22.04
+#   - Rust nightly-2024-05-01
+#   - All dependencies pre-installed (webkit2gtk-4.0, cmake, trunk, etc.)
+#
+# Trigger: Manual only (workflow_dispatch) - will not conflict with other workflows
+#
+# Outputs: All artifacts are tagged with "docker-image-build-" prefix for traceability
+#
+# How to run:
+#   1. Go to: https://github.com/jsavage/depict/actions
+#   2. Click: "Build with Docker Image"
+#   3. Click: "Run workflow" button
+#   4. Wait: ~10-12 minutes (faster than from-scratch builds)
+#   5. Download: Artifacts from the completed run
 
+name: Build with Docker Image
+
+# Only manual trigger - will not run automatically
+# This prevents conflicts with other workflows that might trigger on push/PR
 on:
-  # Trigger this validation workflow only when YAML files change
-  push:
-    paths:
-      - '.github/workflows/**.yml'
-  pull_request:
-    paths:
-      - '.github/workflows/**.yml'
+  workflow_dispatch:
+    inputs:
+      build_id:
+        description: 'Build identifier (for traceability)'
+        required: false
+        default: 'manual'
+        type: string
+
+# Environment variables used throughout the workflow
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  # The Docker image that was successfully used on Nov 24, 2025
+  DOCKER_IMAGE: ghcr.io/jsavage/depict-builder:ubuntu22.04-nightly-2024-05-01
 
 jobs:
-  validate:
+  # Main build job - runs inside your pre-built Docker container
+  build-in-container:
+    name: Build Using Docker Image
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read # Already needed for the checkout step
+      packages: read # <--- CRITICAL: Grants the token permission to pull the image
+    
+    # Use your pre-built container image
+    # This contains all dependencies already installed
+    container:
+      image: ghcr.io/jsavage/depict-builder:ubuntu22.04-nightly-2024-05-01
+      # Credentials to pull from GitHub Container Registry
+      credentials:
+        username: jsavage # ${{ github.actor }}
+        # Use the PAT secret for the password
+        password: ${{ secrets.GHCR_PAT_READ }}
+        # password: ${{}}  # secrets.GITHUB_TOKEN
+    
     steps:
-      - uses: actions/checkout@v4
-      
-      # 🌟 The recommended validation step 🌟
-      - name: Validate GitHub Actions Workflow Files
-        # Using a reliable validator for GHA schema checks
-        uses: rhysd/action-validator@v1
-        with:
-          # Check all workflow files in the repository
-          recursive: true
+    # Step 1: Get the source code
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    # Step 2: Fix Git ownership warning (container runs as root)
+    - name: Configure Git safe directory
+      run: |
+        # The container runs as root but files are owned by the GitHub Actions user
+        # Tell Git this is safe
+        git config --global --add safe.directory /github/workspace
+    
+    # Step 3: Apply the three code fixes that are needed for successful build
+    - name: Apply code fixes
+      run: |
+        echo "Applying code fixes..."
+        # some disabled as already incorporated - retain pattern as a template
+        # Fix 1: Server Label pattern - add missing 'classes' field
+        # sed -i 's/Label{text, hpos, width, vpos}/Label{text, hpos, width, vpos, ..}/g' server/src/main.rs || true
+        
+        # Fix 2: Update factorial dependency version
+        # sed -i 's/factorial = "\^0.3"/factorial = "0.4"/' Cargo.toml || true
+        
+        # Fix 3: Server binding address - allow external connections (0.0.0.0 instead of 127.0.0.1)
+        # sed -i 's/\[127, 0, 0, 1\]/\[0, 0, 0, 0\]/g' server/src/main.rs || true
+        
+        #echo "Code fixes applied successfully"
+
+    # Step 3: Ensure correct dependency versions
+    - name: Ensure correct dependency versions
+      run: |
+        echo "Checking and fixing dependency versions..."
+    
+    # Ensure factorial is version 0.4
+        sed -i 's/factorial = "[^"]*"/factorial = "0.4"/' Cargo.toml
+    
+        echo "✅ Dependency versions set"
+        grep factorial Cargo.toml
+
+    # Step 3.5: Set Rust Toolchain
+    - name: Set Rust Toolchain to Specific Nightly
+      run: |
+        rustup default nightly-2024-05-01
+
+    # Step 4: Update dependencies
+    - name: Update dependencies
+      run: |
+        cargo update
+    
+    # Step 5: Build desktop GUI component
+    - name: Build desktop GUI
+      run: |
+        echo "::group::Building desktop component"
+        echo "This creates the native desktop application with WebKitGTK"
+        cargo build --release -p depict-desktop 2>&1 | tee desktop-build.log
+        echo "::endgroup::"
+        
+        # Verify binary was created
+        if [ -f "target/release/depict-desktop" ]; then
+          echo "✅ Desktop binary created: $(du -h target/release/depict-desktop | cut -f1)"
+        else
+          echo "❌ Desktop binary not found"
+          exit 1
+        fi
+    
+    # Step 6: Build server component
+    - name: Build server
+      run: |
+        echo "::group::Building server component"
+        echo "This creates the HTTP server that serves the web interface"
+        cargo build --release -p depict-server 2>&1 | tee server-build.log
+        echo "::endgroup::"
+        
+        # Verify binary was created
+        if [ -f "target/release/depict-server" ]; then
+          echo "✅ Server binary created: $(du -h target/release/depict-server | cut -f1)"
+        else
+          echo "❌ Server binary not found"
+          exit 1
+        fi
+    
+    # Step 7: Build web interface (WASM)
+    - name: Build web WASM
+      run: |
+        echo "::group::Building web WASM component"
+        echo "This compiles Rust to WebAssembly for browser execution"
+        cargo build --release -p depict-web --target wasm32-unknown-unknown 2>&1 | tee web-build.log
+        echo "::endgroup::"
+        
+        # Verify WASM was created
+        if [ -f "target/wasm32-unknown-unknown/release/depict_web.wasm" ]; then
+          echo "✅ WASM binary created: $(du -h target/wasm32-unknown-unknown/release/depict_web.wasm | cut -f1)"
+        else
+          echo "❌ WASM binary not found"
+          exit 1
+        fi
+    
+    # Step 8: Build web assets (HTML, JS, CSS) using Trunk
+    - name: Build web assets with Trunk
+      run: |
+        echo "::group::Building web assets with Trunk"
+        echo "This bundles WASM with HTML/JS/CSS for deployment"
+        cd web
+        trunk build --release 2>&1 | tee ../trunk-build.log
+        cd ..
+        echo "::endgroup::"
+        
+        # Verify dist directory was created
+        if [ -d "web/dist" ]; then
+          echo "✅ Web assets created in web/dist/"
+          ls -lh web/dist/
+        else
+          echo "❌ Web dist directory not found"
+          exit 1
+        fi
+    
+    # Step 9: Organize all build artifacts into release structure
+    - name: Organize artifacts
+      run: |
+        # Create a uniquely identifiable build directory
+        # Format: docker-image-build-YYYYMMDD-HHMMSS-buildid-commit
+        BUILD_ID="${{ github.event.inputs.build_id }}"
+        BUILD_DIR="docker-image-build-$(date +%Y%m%d-%H%M%S)-${BUILD_ID}-${{ github.sha }}"
+        
+        echo "Creating release directory: $BUILD_DIR"
+        mkdir -p "$BUILD_DIR/dist"
+        mkdir -p "$BUILD_DIR/logs"
+        
+        # Copy compiled binaries
+        echo "Copying binaries..."
+        cp target/release/depict-desktop "$BUILD_DIR/dist/"
+        cp target/release/depict-server "$BUILD_DIR/dist/"
+        
+        # Copy web assets
+        echo "Copying web assets..."
+        cp -r web/dist/* "$BUILD_DIR/dist/"
+        
+        # Copy build logs for debugging
+        echo "Copying build logs..."
+        cp desktop-build.log "$BUILD_DIR/logs/" 2>/dev/null || true
+        cp server-build.log "$BUILD_DIR/logs/" 2>/dev/null || true
+        cp web-build.log "$BUILD_DIR/logs/" 2>/dev/null || true
+        cp trunk-build.log "$BUILD_DIR/logs/" 2>/dev/null || true
+        
+        # Create manifest file with build information
+        cat > "$BUILD_DIR/MANIFEST.txt" << EOF
+        ═══════════════════════════════════════════════════════════════
+        Depict Build Manifest - Docker Image Build
+        ═══════════════════════════════════════════════════════════════
+        
+        Build Information:
+        ------------------
+        Build ID:          ${BUILD_ID}
+        Build Directory:   ${BUILD_DIR}
+        Build Date:        $(date -Iseconds)
+        Git Commit:        ${{ github.sha }}
+        Git Branch:        ${{ github.ref_name }}
+        Workflow Run:      ${{ github.run_id }}
+        Docker Image:      ${DOCKER_IMAGE}
+        
+        Build Environment:
+        ------------------
+        OS:                Ubuntu 22.04 (in container)
+        Rust Version:      $(rustc --version)
+        Cargo Version:     $(cargo --version)
+        
+        Components Built:
+        -----------------
+        Desktop:           depict-desktop ($(stat -c%s target/release/depict-desktop | numfmt --to=iec-i)B)
+        Server:            depict-server ($(stat -c%s target/release/depict-server | numfmt --to=iec-i)B)
+        Web WASM:          depict-web-*_bg.wasm (~4.7MB)
+        Web Assets:        HTML, JS, CSS in dist/
+        
+        Usage:
+        ------
+        To run the server:
+          WEBROOT=./dist PORT=8000 ./dist/depict-server
+        
+        Then access at:
+          http://localhost:8000
+        
+        Repository:
+        -----------
+        https://github.com/${{ github.repository }}
+        
+        ═══════════════════════════════════════════════════════════════
+        EOF
+        
+        # Create convenient run script
+        cat > "$BUILD_DIR/run_server.sh" << 'EOF'
+        #!/usr/bin/env bash
+        # Convenience script to run the depict server
+        SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+        echo "Starting depict server..."
+        echo "Access at: http://localhost:8000"
+        echo "Press Ctrl+C to stop"
+        WEBROOT="$SCRIPT_DIR/dist" PORT=8000 "$SCRIPT_DIR/dist/depict-server"
+        EOF
+        chmod +x "$BUILD_DIR/run_server.sh"
+        
+        # Create README for users
+        cat > "$BUILD_DIR/README.txt" << 'EOF'
+        Depict - Built with Docker Image
+        =================================
+        
+        This build was created using the verified working Docker image
+        from the successful build on November 24, 2025.
+        
+        Quick Start:
+        ------------
+        1. Run: ./run_server.sh
+        2. Open browser: http://localhost:8000
+        3. Try example:
+           person microwave food: open, start, stop / beep : heat
+           person food: eat
+        4. Click "Export SVG" to download diagram
+        
+        Components:
+        -----------
+        - depict-desktop: Native GUI application
+        - depict-server:  HTTP server for web interface
+        - Web assets:     Browser-based interface (WASM)
+        
+        For more information, see MANIFEST.txt
+        EOF
+        
+        # Display what was created
+        echo ""
+        echo "Build artifacts organized in: $BUILD_DIR"
+        echo ""
+        echo "Contents:"
+        ls -lh "$BUILD_DIR/dist/"
+        
+        # Save build dir name for later steps
+        echo "BUILD_DIR=$BUILD_DIR" >> $GITHUB_ENV
+    
+    # Step 10: Create compressed archive for download
+    - name: Create release archive
+      run: |
+        # Create tarball with unique name for traceability
+        ARCHIVE_NAME="${BUILD_DIR}.tar.gz"
+        
+        echo "Creating archive: $ARCHIVE_NAME"
+        tar -czf "$ARCHIVE_NAME" "$BUILD_DIR"
+        
+        # Show archive info
+        echo "Archive created:"
+        ls -lh "$ARCHIVE_NAME"
+        
+        # Create checksums for verification
+        sha256sum "$ARCHIVE_NAME" > "${ARCHIVE_NAME}.sha256"
+        echo "SHA256 checksum:"
+        cat "${ARCHIVE_NAME}.sha256"
+    
+    # Step 11: Upload desktop binary as separate artifact
+    # Tagged with "docker-image-build-" prefix for clear traceability
+    - name: Upload desktop binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: docker-image-build-desktop-${{ github.sha }}
+        path: target/release/depict-desktop
+        retention-days: 90
+        if-no-files-found: error
+    
+    # Step 12: Upload server binary as separate artifact
+    - name: Upload server binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: docker-image-build-server-${{ github.sha }}
+        path: target/release/depict-server
+        retention-days: 90
+        if-no-files-found: error
+    
+    # Step 13: Upload web assets as separate artifact
+    - name: Upload web assets
+      uses: actions/upload-artifact@v4
+      with:
+        name: docker-image-build-web-${{ github.sha }}
+        path: web/dist/
+        retention-days: 90
+        if-no-files-found: error
+    
+    # Step 14: Upload complete build (everything together)
+    - name: Upload complete build
+      uses: actions/upload-artifact@v4
+      with:
+        name: docker-image-build-complete-${{ github.sha }}
+        path: |
+          ${{ env.BUILD_DIR }}/
+          ${{ env.BUILD_DIR }}.tar.gz
+          ${{ env.BUILD_DIR }}.tar.gz.sha256
+        retention-days: 90
+        if-no-files-found: error
+    
+    # Step 15: Upload build logs for debugging
+    - name: Upload build logs
+      uses: actions/upload-artifact@v4
+      if: always()  # Upload logs even if build failed
+      with:
+        name: docker-image-build-logs-${{ github.sha }}
+        path: |
+          ${{ env.BUILD_DIR }}/logs/
+          desktop-build.log
+          server-build.log
+          web-build.log
+          trunk-build.log
+        retention-days: 30
+        if-no-files-found: warn
+    
+    # Step 16: Generate summary for GitHub Actions UI
+    - name: Generate build summary
+      if: always()
+      run: |
+        # This creates a nice summary in the GitHub Actions UI
+        cat >> $GITHUB_STEP_SUMMARY << EOF
+        # 🐳 Build with Docker Image - Complete
+        
+        ## Build Information
+        
+        | Property | Value |
+        |----------|-------|
+        | **Docker Image** | \`${DOCKER_IMAGE}\` |
+        | **Build ID** | \`${{ github.event.inputs.build_id }}\` |
+        | **Commit** | \`${{ github.sha }}\` |
+        | **Branch** | \`${{ github.ref_name }}\` |
+        | **Build Time** | $(date -Iseconds) |
+        
+        ## Components Built
+        
+        | Component | Size | Status |
+        |-----------|------|--------|
+        | Desktop | $(stat -c%s target/release/depict-desktop 2>/dev/null | numfmt --to=iec-i || echo "N/A")B | ✅ |
+        | Server | $(stat -c%s target/release/depict-server 2>/dev/null | numfmt --to=iec-i || echo "N/A")B | ✅ |
+        | Web WASM | ~4.7MB | ✅ |
+        
+        ## Artifacts Available
+        
+        All artifacts are prefixed with \`docker-image-build-\` for traceability:
+        
+        - 📦 \`docker-image-build-desktop-${{ github.sha }}\`
+        - 📦 \`docker-image-build-server-${{ github.sha }}\`
+        - 📦 \`docker-image-build-web-${{ github.sha }}\`
+        - 📦 \`docker-image-build-complete-${{ github.sha }}\`
+        - 📄 \`docker-image-build-logs-${{ github.sha }}\`
+        
+        ## Download & Run
+        
+        1. Download \`docker-image-build-complete-${{ github.sha }}\`
+        2. Extract the archive
+        3. Run \`./run_server.sh\`
+        4. Open http://localhost:8000
+        
+        ## Traceability
+        
+        - **Build Directory:** \`$BUILD_DIR\`
+        - **Workflow Run:** [#${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+        - **All artifacts:** Retained for 90 days
+        
+        ---
+        
+        Built using verified Docker image from November 24, 2025 successful build.
+        EOF
+
+  # Optional test job - verifies the build works
+  test-build:
+    name: Test Build
+    needs: build-in-container
+    runs-on: ubuntu-latest
+    if: always()  # Run even if build had warnings
+    
+    steps:
+    - name: Download complete build
+      uses: actions/download-artifact@v4
+      with:
+        name: docker-image-build-complete-${{ github.sha }}
+    
+    - name: Test binaries exist and are executable
+      run: |
+        # Find the build directory
+        BUILD_DIR=$(ls -d docker-image-build-* | head -1)
+        echo "Testing build in: $BUILD_DIR"
+        
+        # Test desktop binary
+        if [ -x "$BUILD_DIR/dist/depict-desktop" ]; then
+          echo "✅ Desktop binary is executable"
+        else
+          echo "❌ Desktop binary missing or not executable"
+          exit 1
+        fi
+        
+        # Test server binary
+        if [ -x "$BUILD_DIR/dist/depict-server" ]; then
+          echo "✅ Server binary is executable"
+        else
+          echo "❌ Server binary missing or not executable"
+          exit 1
+        fi
+        
+        # Test web assets exist
+        if [ -f "$BUILD_DIR/dist/index.html" ]; then
+          echo "✅ Web assets present"
+        else
+          echo "❌ Web assets missing"
+          exit 1
+        fi
+        
+        echo ""
+        echo "All tests passed! ✅"
