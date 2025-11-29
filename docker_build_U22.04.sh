@@ -27,14 +27,16 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
 ENV PATH=/root/.cargo/bin:$PATH
 
 # Install WASM target and tools
-RUN rustup target add wasm32-unknown-unknown && \
+RUN rustup install nightly-2024-05-01 && \
+    rustup default nightly-2024-05-01 && \
+    rustup target add wasm32-unknown-unknown && \
     cargo install trunk wasm-bindgen-cli
 
 WORKDIR /workspace
 
 EXPOSE 8080
 
-CMD ["bash"]
+CMD ["bash"]  # added by js
 EOF
 
 # Build the Docker image (this will take a few minutes)
