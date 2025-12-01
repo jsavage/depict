@@ -1,4 +1,4 @@
-name: Build Depict
+name:Debug Build Depict wf
 
 on:
   push:
