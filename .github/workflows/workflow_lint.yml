@@ -8,6 +8,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/**/*.yml'
+  workflow_dispatch:  # Allow manual triggers
 
 jobs:
   validate:
