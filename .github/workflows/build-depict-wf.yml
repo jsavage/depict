@@ -1,0 +1,181 @@
+name: Build Depict
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # Allow manual triggers
+
+env:
+  RUST_NIGHTLY_DATE: "2024-11-01"
+  TRUNK_VERSION: "0.21.4"
+  WASM_BINDGEN_VERSION: "0.2.95"
+
+jobs:
+  build:
+    name: Build All Components
+    runs-on: ubuntu-22.04
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+      
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-git-
+      
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-
+      
+      - name: Install Rust nightly
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-${{ env.RUST_NIGHTLY_DATE }}
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+      
+      - name: Install trunk
+        run: |
+          cargo install trunk --version ${{ env.TRUNK_VERSION }} --locked || \
+          cargo install trunk --version ${{ env.TRUNK_VERSION }}
+      
+      - name: Install wasm-bindgen-cli
+        run: |
+          cargo install wasm-bindgen-cli --version ${{ env.WASM_BINDGEN_VERSION }} --locked || \
+          cargo install wasm-bindgen-cli --version ${{ env.WASM_BINDGEN_VERSION }}
+      
+      - name: Verify toolchain
+        run: |
+          rustc --version
+          cargo --version
+          trunk --version
+          wasm-bindgen --version
+      
+      - name: Apply code fixes
+        run: |
+          # Fix server code - missing 'classes' field
+          sed -i '70s/|depict::graph_drawing::frontend::dom::Label{text, hpos, width, vpos}|/|depict::graph_drawing::frontend::dom::Label{text, hpos, width, vpos, ..}|/' server/src/main.rs || true
+          
+          # Fix inflector case
+          sed -i 's/inflector[[:space:]]*=/Inflector =/' server/Cargo.toml || true
+          
+          # Ensure workspace members are enabled
+          sed -i 's/#"server"/"server"/' Cargo.toml || true
+          sed -i 's/#"tikz"/"tikz"/' Cargo.toml || true
+      
+      - name: Build desktop
+        run: cargo build --release -p depict-desktop
+      
+      - name: Build server
+        run: cargo build --release -p depict-server
+      
+      - name: Build web WASM
+        run: cargo build --release -p depict-web --target wasm32-unknown-unknown
+      
+      - name: Build web assets
+        run: |
+          cd web
+          trunk build --release
+          cd ..
+      
+      - name: Organize artifacts
+        run: |
+          BUILD_DIR="build_$(date +%Y%m%d_%H%M%S)"
+          mkdir -p "$BUILD_DIR/dist"
+          
+          cp target/release/depict-desktop "$BUILD_DIR/dist/"
+          cp target/release/depict-server "$BUILD_DIR/dist/"
+          cp -r web/dist/* "$BUILD_DIR/dist/"
+          
+          chmod +x "$BUILD_DIR/dist/depict-desktop"
+          chmod +x "$BUILD_DIR/dist/depict-server"
+          
+          # Create run script
+          cat > "$BUILD_DIR/run-server.sh" << 'EOF'
+          #!/usr/bin/env bash
+          SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+          export WEBROOT="$SCRIPT_DIR/dist"
+          PORT=${PORT:-8000}
+          echo "Starting depict server on port $PORT"
+          exec "$SCRIPT_DIR/dist/depict-server"
+          EOF
+          chmod +x "$BUILD_DIR/run-server.sh"
+          
+          # Create build info file
+          cat > "$BUILD_DIR/build-info.txt" << EOF
+          Build Date: $(date)
+          Git Commit: ${{ github.sha }}
+          Git Ref: ${{ github.ref }}
+          Rust Version: $(rustc --version)
+          Cargo Version: $(cargo --version)
+          Trunk Version: $(trunk --version)
+          Runner OS: ${{ runner.os }}
+          EOF
+          
+          echo "BUILD_DIR=$BUILD_DIR" >> $GITHUB_ENV
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: depict-build-${{ github.sha }}
+          path: ${{ env.BUILD_DIR }}
+          retention-days: 30
+      
+      - name: Create release tarball
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          tar -czf depict-${{ github.ref_name }}.tar.gz ${{ env.BUILD_DIR }}
+      
+      - name: Upload release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: depict-${{ github.ref_name }}.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-22.04
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install Rust nightly
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-${{ env.RUST_NIGHTLY_DATE }}
+          components: rustfmt, clippy
+      
+      - name: Apply code fixes
+        run: |
+          sed -i '70s/|depict::graph_drawing::frontend::dom::Label{text, hpos, width, vpos}|/|depict::graph_drawing::frontend::dom::Label{text, hpos, width, vpos, ..}|/' server/src/main.rs || true
+          sed -i 's/inflector[[:space:]]*=/Inflector =/' server/Cargo.toml || true
+          sed -i 's/#"server"/"server"/' Cargo.toml || true
+          sed -i 's/#"tikz"/"tikz"/' Cargo.toml || true
+      
+      - name: Run tests
+        run: cargo test --workspace --lib --bins
+      
+      - name: Run clippy
+        run: cargo clippy --workspace -- -D warnings
+        continue-on-error: true  # Don't fail on clippy warnings initially
