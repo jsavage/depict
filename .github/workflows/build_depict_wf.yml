@@ -2,9 +2,9 @@ name: Build Depict
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ xmain, xdevelop ]
   pull_request:
-    branches: [ main ]
+    branches: [ xmain ]
   workflow_dispatch:  # Allow manual triggers
 
 env:
