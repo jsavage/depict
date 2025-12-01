@@ -1,4 +1,4 @@
-name: Web Static Build & Release
+name: Web Static Build Release
 
 on:
   push:
