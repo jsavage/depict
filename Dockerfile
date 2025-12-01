@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y \
 
 # Install Rust with a modern nightly that supports edition2024
 # Using a specific date for reproducibility
-ENV RUST_NIGHTLY_DATE=2024-12-01
+ENV RUST_NIGHTLY_DATE=2024-11-30
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
     --default-toolchain nightly-${RUST_NIGHTLY_DATE} \
     --profile minimal \
@@ -52,3 +52,4 @@ RUN rustc --version && \
 
 # Default command
 CMD ["/bin/bash"]
+ENV RUST_NIGHTLY_DATE=2024-11-30
