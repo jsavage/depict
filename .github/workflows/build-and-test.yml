@@ -2,9 +2,9 @@ name: Build and Test Depict
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ xmain, xdevelop ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ xmain, xdevelop ]
   workflow_dispatch:  # Allow manual trigger
 
 env:
