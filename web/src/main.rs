@@ -1,6 +1,6 @@
 #![feature(c_variadic)]
 
-use std::{default::Default, panic::catch_unwind};
+use std::{default::Default, panic::catch_unwind, time::Duration};
 
 use depict::{graph_drawing::{
     frontend::{dom::{draw, Drawing}, dioxus::DEFAULT_CSS},
@@ -13,6 +13,10 @@ use futures::StreamExt;
 use indoc::indoc;
 
 use tracing::{event, Level};
+use gloo_timers::future::TimeoutFuture;
+
+// --- C Shim Functions (kept as-is for WASM compatibility) ---
+// [Previous C shim functions remain unchanged - truncated for brevity]
 
 #[no_mangle]
 unsafe extern "C" fn malloc(size: ::std::os::raw::c_ulong) -> *mut ::std::os::raw::c_void {
@@ -52,10 +56,6 @@ unsafe extern "C" fn free(ptr: *mut ::std::os::raw::c_void) {
 
 #[no_mangle]
 unsafe extern "C" fn printf(format: *const ::std::os::raw::c_char, mut args: ...) -> ::std::os::raw::c_int {
-    // use std::ffi::CStr;
-    // let c_str = unsafe { CStr::from_ptr(format_string) };
-    // let c_str = c_str.to_string_lossy();
-    // return c_str.len().try_into().unwrap();
     let mut s = String::new();
     #[cfg(target_family="wasm")]
     let format = format as *const u8;
@@ -100,9 +100,9 @@ use osqp_rust_sys::src::src::util::{mach_timebase_info_t, kern_return_t};
 #[no_mangle]
 unsafe extern "C" fn mach_timebase_info(info: mach_timebase_info_t) -> kern_return_t {
     let info = &mut *info;
-    info.numer = 1; // wrong, but may work?
+    info.numer = 1;
     info.denom = 1;
-    0 // KERN_SUCCESS
+    0
 }
 
 #[no_mangle]
@@ -121,7 +121,7 @@ unsafe extern "C" fn dlerror() -> *mut ::std::os::raw::c_char {
 }
 
 #[no_mangle]
-unsafe extern "C"     fn dlsym(
+unsafe extern "C" fn dlsym(
     __handle: *mut ::std::os::raw::c_void,
     __symbol: *const ::std::os::raw::c_char,
 ) -> *mut ::std::os::raw::c_void {
@@ -150,82 +150,329 @@ const PLACEHOLDER: &str = indoc!("
     person food: stir
 ");
 
-pub struct AppProps {
+// --- Application Logic Starts Here ---
+
+// Application Status Enum
+#[derive(Clone, PartialEq)]
+pub enum AppStatus {
+    Ready,
+    Processing,
+    Timeout,
+    Error(String),
 }
+
+// Testing Configuration
+#[derive(Clone)]
+pub struct TestConfig {
+    pub simulate_slow: bool,      // Add artificial delay
+    pub simulate_lockup: bool,    // Simulate infinite loop
+    pub delay_ms: u32,            // Delay duration in milliseconds
+}
+
+impl Default for TestConfig {
+    fn default() -> Self {
+        TestConfig {
+            simulate_slow: false,
+            simulate_lockup: false,
+            delay_ms: 2000,  // 2 second default delay
+        }
+    }
+}
+
+// History entry for undo functionality
+#[derive(Clone)]
+pub struct HistoryEntry {
+    pub model: String,
+    pub drawing: Drawing,
+}
+
+pub struct AppProps {}
 
 pub fn app(cx: Scope<AppProps>) -> Element {
 
+    // 1. State Management
     let model = use_state(&cx, || String::from(PLACEHOLDER));
-
-    // let drawing = use_state(&cx, || serde_json::from_str::<DrawResp>(PLACEHOLDER_DRAWING).unwrap().drawing);
     let drawing = use_state(&cx, || draw(PLACEHOLDER.into()).unwrap());
+    let status = use_state(&cx, || AppStatus::Ready);
+    let test_config = use_state(&cx, || TestConfig::default());
+    
+    // History for undo (keep last 10 states)
+    let history = use_state(&cx, || {
+        vec![HistoryEntry {
+            model: String::from(PLACEHOLDER),
+            drawing: draw(PLACEHOLDER.into()).unwrap(),
+        }]
+    });
+    
+    // Track current position in history
+    let history_index = use_state(&cx, || 0usize);
 
+    // 2. Asynchronous Processing Coroutine with Timeout Detection
     let drawing_client = use_coroutine(&cx, |mut rx: UnboundedReceiver<String>| {
-        to_owned![drawing];
+        to_owned![drawing, status, model, test_config, history, history_index];
         async move {
-            while let Some(model) = rx.next().await {
-                let nodes = if model.trim().is_empty() {
-                    Ok(Ok(Drawing::default()))
-                } else {
-                    catch_unwind(|| {
-                        draw(model.clone())
-                    })
+            while let Some(current_model) = rx.next().await {
+                status.set(AppStatus::Processing);
+                
+                let config = test_config.get().clone();
+                
+                // Create a timeout future (5 seconds)
+                let timeout = TimeoutFuture::new(5_000);
+                
+                // Process the drawing
+                let process_future = async {
+                    // TEST: Simulate slow processing
+                    if config.simulate_slow {
+                        log::info!("TEST MODE: Simulating slow processing ({}ms delay)", config.delay_ms);
+                        TimeoutFuture::new(config.delay_ms).await;
+                    }
+                    
+                    // TEST: Simulate lockup/infinite loop
+                    if config.simulate_lockup {
+                        log::warn!("TEST MODE: Simulating lockup - this will timeout!");
+                        // Create a future that never completes
+                        loop {
+                            TimeoutFuture::new(100).await;
+                        }
+                    }
+                    
+                    // Normal processing
+                    if current_model.trim().is_empty() {
+                        Ok(Ok(Drawing::default()))
+                    } else {
+                        catch_unwind(|| {
+                            draw(current_model.clone())
+                        })
+                    }
                 };
-                match nodes {
-                    Ok(Ok(drawing_nodes)) => {
-                        drawing.set(drawing_nodes);
+                
+                // Race between processing and timeout
+                let result = futures::select! {
+                    nodes = process_future.fuse() => Some(nodes),
+                    _ = timeout.fuse() => None,
+                };
+                
+                match result {
+                    Some(nodes) => {
+                        // Processing completed before timeout
+                        match nodes {
+                            Ok(Ok(drawing_nodes)) => {
+                                drawing.set(drawing_nodes.clone());
+                                status.set(AppStatus::Ready);
+                                
+                                // Add to history (limit to 10 entries)
+                                let mut hist = history.get().clone();
+                                hist.push(HistoryEntry {
+                                    model: current_model.clone(),
+                                    drawing: drawing_nodes,
+                                });
+                                if hist.len() > 10 {
+                                    hist.remove(0);
+                                }
+                                history.set(hist.clone());
+                                history_index.set(hist.len() - 1);
+                            },
+                            Ok(Err(draw_err)) => {
+                                let error_msg = format!("Diagram compilation error: {:?}", draw_err);
+                                status.set(AppStatus::Error(error_msg));
+                            },
+                            Err(panic_err) => {
+                                let panic_info = if let Some(s) = panic_err.downcast_ref::<&'static str>() {
+                                    s.to_string()
+                                } else if let Some(s) = panic_err.downcast_ref::<String>() {
+                                    s.clone()
+                                } else {
+                                    "Unknown panic payload".to_string()
+                                };
+                                let error_msg = format!("Internal Panic: {}", panic_info);
+                                log::error!("{}", error_msg);
+                                status.set(AppStatus::Error(error_msg));
+                            },
+                        }
                     },
-                    _ => {},
+                    None => {
+                        // Timeout occurred
+                        log::error!("Processing timeout after 5 seconds!");
+                        status.set(AppStatus::Timeout);
+                    }
                 }
             }
         }
     });
 
-    // let (drawing, nodes) = match drawing_fut.value() {
-    //     Some(Some(drawing)) => (Some(drawing), render(cx, drawing.clone())),
-    //     Some(None) => (None, cx.render(rsx!("loading..."))),
-    //     _ => (None, cx.render(rsx!("error"))),
-    // };
+    // 3. Dynamic UI Elements
+    
+    let status_label = match status.get() {
+        AppStatus::Ready => "Enter your model below:",
+        AppStatus::Processing => "Processing...",
+        AppStatus::Timeout => "TIMEOUT: Processing took too long - use Undo to recover",
+        AppStatus::Error(_) => "ERROR: Check your syntax or use Undo to recover",
+    };
+    
+    let label_style = match status.get() {
+        AppStatus::Error(_) | AppStatus::Timeout => "color: red; font-weight: bold;",
+        AppStatus::Processing => "color: orange; font-weight: bold;",
+        _ => "color: black;",
+    };
+    
     let nodes = render(cx, drawing.get().clone());
-
     let viewbox_width = drawing.viewbox_width;
-    // let viewbox_width = 1024.0;
-    // let _crossing_number = cx.render(rsx!(match drawing.get().crossing_number {
-    //     Some(cn) => rsx!(span { "{cn}" }),
-    //     None => rsx!(div{}),
-    // }));
-
     let data_svg = as_data_svg(drawing.get().clone(), true);
     let syntax_guide = depict::graph_drawing::frontend::dioxus::syntax_guide(cx)?;
+    
+    // Check if undo is available
+    let can_undo = *history_index.get() > 0;
+    let can_redo = *history_index.get() < history.get().len() - 1;
 
+    // 4. Component Render
     cx.render(rsx!{
-        // highlight_styles
         div {
-            // key: "editor",
             class: "main_editor",
             div {
+                // Status Label
                 div {
-                    // key: "editor_label",
-                    "Model"
+                    style: "{label_style}",
+                    status_label
                 }
+                
+                // Test Controls Section
                 div {
-                    // key: "editor_editor",
+                    style: "padding: 10px; background-color: #f0f0f0; border: 1px solid #ccc; margin-bottom: 10px;",
+                    details {
+                        summary {
+                            style: "font-weight: bold; cursor: pointer;",
+                            "🧪 Test Controls (for debugging)"
+                        }
+                        div {
+                            style: "padding: 10px;",
+                            
+                            // Slow Processing Toggle
+                            div {
+                                style: "margin-bottom: 5px;",
+                                label {
+                                    input {
+                                        r#type: "checkbox",
+                                        checked: "{test_config.simulate_slow}",
+                                        onchange: move |e| {
+                                            let mut config = test_config.get().clone();
+                                            config.simulate_slow = e.value.parse().unwrap_or(false);
+                                            test_config.set(config);
+                                        }
+                                    }
+                                    " Simulate Slow Processing ({test_config.delay_ms}ms delay)"
+                                }
+                            }
+                            
+                            // Delay Slider
+                            div {
+                                style: "margin-bottom: 5px; margin-left: 20px;",
+                                label {
+                                    "Delay (ms): "
+                                    input {
+                                        r#type: "range",
+                                        min: "500",
+                                        max: "5000",
+                                        step: "500",
+                                        value: "{test_config.delay_ms}",
+                                        disabled: "{!test_config.simulate_slow}",
+                                        oninput: move |e| {
+                                            let mut config = test_config.get().clone();
+                                            config.delay_ms = e.value.parse().unwrap_or(2000);
+                                            test_config.set(config);
+                                        }
+                                    }
+                                    " {test_config.delay_ms}ms"
+                                }
+                            }
+                            
+                            // Lockup Toggle
+                            div {
+                                style: "margin-bottom: 5px;",
+                                label {
+                                    input {
+                                        r#type: "checkbox",
+                                        checked: "{test_config.simulate_lockup}",
+                                        onchange: move |e| {
+                                            let mut config = test_config.get().clone();
+                                            config.simulate_lockup = e.value.parse().unwrap_or(false);
+                                            test_config.set(config);
+                                        }
+                                    }
+                                    " Simulate Lockup (will trigger timeout)"
+                                }
+                            }
+                            
+                            // Warning message
+                            if test_config.simulate_slow || test_config.simulate_lockup {
+                                rsx! {
+                                    div {
+                                        style: "color: orange; font-style: italic; margin-top: 10px;",
+                                        "⚠️ Test mode active - any text change will trigger the selected simulation"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // History Controls (Undo/Redo)
+                div {
+                    style: "margin-bottom: 10px; display: flex; gap: 10px;",
+                    button {
+                        disabled: "{!can_undo}",
+                        onclick: move |_| {
+                            if can_undo {
+                                let new_index = history_index.get().saturating_sub(1);
+                                history_index.set(new_index);
+                                let entry = &history.get()[new_index];
+                                model.set(entry.model.clone());
+                                drawing.set(entry.drawing.clone());
+                                status.set(AppStatus::Ready);
+                                log::info!("Undo to history index {}", new_index);
+                            }
+                        },
+                        "⬅️ Undo"
+                    }
+                    button {
+                        disabled: "{!can_redo}",
+                        onclick: move |_| {
+                            if can_redo {
+                                let new_index = *history_index.get() + 1;
+                                history_index.set(new_index);
+                                let entry = &history.get()[new_index];
+                                model.set(entry.model.clone());
+                                drawing.set(entry.drawing.clone());
+                                status.set(AppStatus::Ready);
+                                log::info!("Redo to history index {}", new_index);
+                            }
+                        },
+                        "➡️ Redo"
+                    }
+                    span {
+                        style: "color: #666; font-size: 0.9em; align-self: center;",
+                        "History: {history_index.get() + 1}/{history.get().len()}"
+                    }
+                }
+                
+                // Text Editor
+                div {
                     textarea {
                         style: "box-sizing: border-box; width: calc(100% - 2em); border-width: 1px; border-color: #000;",
                         rows: "10",
                         autocomplete: "off",
-                        // autocorrect: "off",
                         "autocapitalize": "off",
                         autofocus: "true",
                         spellcheck: "false",
-                        // placeholder: "",
                         oninput: move |e| {
                             event!(Level::TRACE, "INPUT");
+                            model.set(e.value.clone());
                             drawing_client.send(e.value.clone());
                         },
                         "{model}"
                     }
                 }
+                
+                // Footer with syntax guide and tools
                 div {
                     style: "display: flex; flex-direction: row; justify-content: space-between;",
                     syntax_guide,
@@ -233,11 +480,8 @@ pub fn app(cx: Scope<AppProps>) -> Element {
                         details {
                             style: "display: flex; flex-direction: column; align-self: end; font-size: 0.875rem; line-height: 1.25rem;",
                             summary {
-                                span {
-                                    "Tools",
-                                }
+                                span { "Tools" }
                             },
-                            // EXPORT
                             div {
                                 a {
                                     href: "{data_svg}",
@@ -245,7 +489,6 @@ pub fn app(cx: Scope<AppProps>) -> Element {
                                     "Export SVG"
                                 }
                             }
-                            // LICENSES
                             div {
                                 details {
                                     summary {
@@ -313,10 +556,7 @@ fn main() {
 
     dioxus_web::launch_with_props(
         app,
-        AppProps {
-        },
+        AppProps {},
         dioxus_web::Config::new()
     );
 }
-
-
