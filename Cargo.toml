@@ -26,7 +26,7 @@ colorous = { version = "1" }
 derive_more = "0.99"
 dioxus = { version = "0.3", optional = true }
 enum-kinds = "0.5.1"
-factorial = "0.3"
+factorial = "0.4"
 include_dir = "0.7"
 itertools = "0.10"
 logos = "0.12"
@@ -38,6 +38,10 @@ sorted-vec = "0.7"
 svg = "0.10"
 thiserror = "1.0"
 typed-index-collections = "3.0"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+gloo-timers = "0.3"
+
 
 # osqp
 osqp = { version = "0.6", optional = true }
@@ -65,8 +69,8 @@ members = [
   "dioxus",
   #"objc",
   "parse",
-  #"server",
-  #"tikz",
+  "server",
+  "tikz",
   "web",
 ]
 
@@ -77,3 +81,4 @@ split-debuginfo = "packed"
 #split-debuginfo = "unpacked"
 #incremental = true
 strip = "none"
+
