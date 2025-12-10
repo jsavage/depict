@@ -1,0 +1,39 @@
+name: Manual Ruff Lint
+
+on:
+  workflow_dispatch:
+    inputs:
+      fix:
+        description: "Run with --fix to automatically correct simple lint issues"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+jobs:
+  lint:
+    name: Run Ruff Linter
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install UV
+        uses: astral-sh/setup-uv@v1
+
+      - name: Install Ruff via UV
+        run: |
+          uv tool install ruff
+
+      - name: Run Ruff check
+        run: |
+          if [ "${{ github.event.inputs.fix }}" == "true" ]; then
+            echo "Running Ruff with auto-fix enabled..."
+            uv run ruff check . --fix
+          else
+            echo "Running Ruff in read-only mode..."
+            uv run ruff check .
+          fi
