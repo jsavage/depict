@@ -17,10 +17,10 @@ use tracing::{event, Level};
 // ============================================================================
 // FEATURE FLAGS - Change these to enable/disable features
 // ============================================================================
-const ENABLE_STATUS_TRACKING: bool = true;      // Status labels (Ready, Processing, Error)
-const ENABLE_TIMEOUT_DETECTION: bool = true;    // 5-second timeout for processing
-const ENABLE_HISTORY: bool = true;              // Undo/Redo functionality
-const ENABLE_TEST_CONTROLS: bool = true;        // Debug test controls panel
+const ENABLE_STATUS_TRACKING: bool = false;      // Status labels (Ready, Processing, Error)
+const ENABLE_TIMEOUT_DETECTION: bool = false;    // 5-second timeout for processing
+const ENABLE_HISTORY: bool = false;              // Undo/Redo functionality
+const ENABLE_TEST_CONTROLS: bool = false;        // Debug test controls panel
 
 // Conditional imports based on features
 #[cfg(any(
