@@ -1,0 +1,44 @@
+# On your host, create updated Dockerfile
+cat > Dockerfile.working-2024-11 << 'EOF'
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    pkg-config \
+    cmake \
+    libssl-dev \
+    curl \
+    git \
+    libwebkit2gtk-4.0-dev \
+    libgtk-3-dev \
+    libsoup2.4-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
+    sh -s -- -y --default-toolchain stable
+ENV PATH=/root/.cargo/bin:$PATH
+
+# Use November 2024 nightly (we know this works)
+RUN rustup install nightly-2024-11-01 && \
+    rustup default nightly-2024-11-01 && \
+    rustup target add wasm32-unknown-unknown && \
+    cargo install trunk wasm-bindgen-cli
+
+WORKDIR /workspace
+EXPOSE 8000
+CMD ["bash"]
+EOF
+
+# Build the new image
+docker build -f Dockerfile.working-2024-11 -t jsavage/depict-builder:ubuntu22.04-nightly-2024-11-01 .
+
+# Push to GitHub Container Registry
+docker tag jsavage/depict-builder:ubuntu22.04-nightly-2024-11-01 \
+  ghcr.io/jsavage/depict-builder:ubuntu22.04-nightly-2024-11-01
+
+docker push ghcr.io/jsavage/depict-builder:ubuntu22.04-nightly-2024-11-01

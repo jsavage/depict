@@ -4128,10 +4128,11 @@ pub mod geometry {
 
     use enum_kinds::EnumKind;
     use ordered_float::OrderedFloat;
+
+    #[cfg(all(feature="osqp", not(feature="osqp-rust")))]
+    use osqp;
     #[cfg(all(not(feature="osqp"), feature="osqp-rust"))]
     use osqp_rust as osqp;
-    #[cfg(all(feature="osqp", not(feature="osqp-rust")))]
-    use osqp as osqp;
 
     use petgraph::EdgeDirection::{Outgoing, Incoming};
     use petgraph::Graph;

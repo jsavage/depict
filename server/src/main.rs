@@ -67,7 +67,7 @@ async fn draw<'s>(Json(draw_rx): Json<Draw>) -> Result<Json<DrawResp>, DrawError
                 },
                 depict::graph_drawing::frontend::dom::Node::Svg{ key, path, z_index, rel, label, .. } => {
                     depict::rest::Node::Svg{ key, path, z_index, rel, label: label.map(
-                        |depict::graph_drawing::frontend::dom::Label{text, hpos, width, vpos}| {
+                        |depict::graph_drawing::frontend::dom::Label{text, hpos, width, vpos, ..}| {
                             depict::rest::Label{ text, hpos, width, vpos }
                         })
                     }

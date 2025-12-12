@@ -1,0 +1,1339 @@
+=== Inside Docker Container ===
+Rust version: rustc 1.85.0-nightly (d10a6823f 2024-11-29)
+Cargo version: cargo 1.85.0-nightly (4c39aaff6 2024-11-25)
+Trunk version: trunk 0.21.4
+Build started: Thu Dec  4 23:57:11 UTC 2025
+
+=== Depict Build Script ===
+Started at: Thu Dec  4 23:57:11 UTC 2025
+
+1. Verifying Rust toolchain...
+================================================
+rustc 1.85.0-nightly (d10a6823f 2024-11-29)
+cargo 1.85.0-nightly (4c39aaff6 2024-11-25)
+trunk 0.21.4
+wasm-bindgen 0.2.95
+Build host: Linux bdbd00d1f9d8 6.8.0-88-generic #89-Ubuntu SMP PREEMPT_DYNAMIC Sat Oct 11 01:02:46 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
+Date: Thu Dec  4 23:57:12 UTC 2025
+================================================
+
+2. Applying code fixes...
+✓ Fixed server/src/main.rs line 70
+✓ Fixed Inflector case in server/Cargo.toml
+✓ Verified workspace members
+
+3. Building desktop application...
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /workspace/dioxus/Cargo.toml
+workspace: /workspace/Cargo.toml
+    Updating crates.io index
+    Updating git repository `https://github.com/mstone/osqp.rs`
+    Updating git submodule `https://github.com/oxfordcontrol/osqp.git`
+    Updating git submodule `https://github.com/oxfordcontrol/qdldl.git`
+ Downloading crates ...
+  Downloaded allocator-api2 v0.2.21
+  Downloaded async-trait v0.1.89
+  Downloaded adler2 v2.0.1
+  Downloaded anyhow v1.0.100
+  Downloaded cfg-if v1.0.4
+  Downloaded async-channel v2.5.0
+  Downloaded ahash v0.8.12
+  Downloaded url v2.5.7
+  Downloaded glib-macros v0.15.13
+  Downloaded bumpslab v0.2.0
+  Downloaded include_dir v0.7.4
+  Downloaded async-task v4.7.1
+  Downloaded include_dir_macros v0.7.4
+  Downloaded ident_case v1.0.1
+  Downloaded instant v0.1.13
+  Downloaded zerofrom v0.1.6
+  Downloaded execute-command-macro-impl v0.1.12
+  Downloaded equivalent v1.0.2
+  Downloaded version-compare v0.2.1
+  Downloaded execute v0.2.15
+  Downloaded yoke-derive v0.8.1
+  Downloaded version-compare v0.0.11
+  Downloaded utf8_iter v1.0.4
+  Downloaded idna_adapter v1.2.1
+  Downloaded execute-command-macro v0.1.11
+  Downloaded indoc v1.0.9
+  Downloaded gdkx11-sys v0.15.1
+  Downloaded enum-kinds v0.5.1
+  Downloaded darling_macro v0.21.3
+  Downloaded execute-command-tokens v0.1.9
+  Downloaded to_method v1.1.0
+  Downloaded stable_deref_trait v1.2.1
+  Downloaded unty v0.0.4
+  Downloaded cairo-sys-rs v0.15.1
+  Downloaded intmap v0.7.1
+  Downloaded fixedbitset v0.4.2
+  Downloaded atk-sys v0.15.1
+  Downloaded enumset_derive v0.14.0
+  Downloaded self_cell v0.10.3
+  Downloaded heck v0.4.1
+  Downloaded concurrent-queue v2.5.0
+  Downloaded dioxus-rsx v0.0.2
+  Downloaded form_urlencoded v1.2.2
+  Downloaded zerofrom-derive v0.1.6
+  Downloaded filetime v0.2.26
+  Downloaded dioxus-core-macro v0.3.0
+  Downloaded percent-encoding v2.3.2
+  Downloaded zerovec-derive v0.11.2
+  Downloaded primal-estimate v0.3.3
+  Downloaded heck v0.3.3
+  Downloaded autocfg v1.5.0
+  Downloaded smallbox v0.8.8
+  Downloaded either v1.15.0
+  Downloaded event-listener-strategy v0.5.4
+  Downloaded blocking v1.6.2
+  Downloaded javascriptcore-rs-sys v0.4.0
+  Downloaded factorial v0.4.0
+  Downloaded field-offset v0.3.6
+  Downloaded longest-increasing-subsequence v0.1.0
+  Downloaded javascriptcore-rs v0.16.0
+  Downloaded writeable v0.6.2
+  Downloaded cmake v0.1.54
+  Downloaded webkit2gtk-sys v0.18.0
+  Downloaded dioxus-interpreter-js v0.3.3
+  Downloaded infer v0.11.0
+  Downloaded fastrand v2.3.0
+  Downloaded gdk-pixbuf v0.15.11
+  Downloaded home v0.5.5
+  Downloaded gtk3-macros v0.15.6
+  Downloaded serde-value v0.7.0
+  Downloaded itoa v1.0.15
+  Downloaded ordered-float v3.9.2
+  Downloaded gobject-sys v0.15.10
+  Downloaded raw-window-handle v0.5.2
+  Downloaded dioxus v0.3.2
+  Downloaded spinning v0.1.0
+  Downloaded hamming v0.1.3
+  Downloaded primal-bit v0.3.2
+  Downloaded logos v0.12.1
+  Downloaded gdk-pixbuf-sys v0.15.10
+  Downloaded fdeflate v0.3.7
+  Downloaded ordered-float v2.10.1
+  Downloaded memoffset v0.9.1
+  Downloaded self_cell v1.2.1
+  Downloaded toml_datetime v0.6.11
+  Downloaded proc-macro-error-attr v1.0.4
+  Downloaded colorous v1.0.16
+  Downloaded piper v0.2.4
+  Downloaded potential_utf v0.1.4
+  Downloaded find-msvc-tools v0.1.5
+  Downloaded osqp v0.6.3
+  Downloaded beef v0.5.2
+  Downloaded serde_spanned v0.6.9
+  Downloaded atk v0.15.1
+  Downloaded slab v0.4.11
+  Downloaded sorted-vec v0.7.0
+  Downloaded pkg-config v0.3.32
+  Downloaded parking v2.2.1
+  Downloaded semver v1.0.27
+  Downloaded rustversion v1.0.22
+  Downloaded tinystr v0.8.2
+  Downloaded dioxus-hot-reload v0.1.1
+  Downloaded tokio-macros v2.6.0
+  Downloaded thread_local v1.1.9
+  Downloaded iana-time-zone v0.1.64
+  Downloaded cfg-expr v0.9.1
+  Downloaded synstructure v0.13.2
+  Downloaded crc32fast v1.5.0
+  Downloaded once_cell v1.21.3
+  Downloaded smallvec v1.15.1
+  Downloaded pango-sys v0.15.10
+  Downloaded enumset v1.1.10
+  Downloaded yoke v0.8.1
+  Downloaded webbrowser v0.8.15
+  Downloaded fs_extra v1.3.0
+  Downloaded ignore v0.4.20
+  Downloaded globset v0.4.14
+  Downloaded svg v0.10.0
+  Downloaded thiserror-impl v1.0.69
+  Downloaded thiserror v1.0.69
+  Downloaded litemap v0.8.1
+  Downloaded pin-project-lite v0.2.16
+  Downloaded system-deps v5.0.0
+  Downloaded cairo-rs v0.15.12
+  Downloaded darling v0.21.3
+  Downloaded target-lexicon v0.12.16
+  Downloaded dioxus-rsx v0.0.3
+  Downloaded pomelo-impl v0.1.5
+  Downloaded soup2-sys v0.2.0
+  Downloaded proc-macro-error v1.0.4
+  Downloaded serde_repr v0.1.20
+  Downloaded crossbeam-utils v0.8.21
+  Downloaded proc-macro-crate v1.3.1
+  Downloaded keyboard-types v0.6.2
+  Downloaded event-listener v5.4.1
+  Downloaded internment v0.7.5
+  Downloaded cfg-expr v0.15.8
+  Downloaded dioxus-hooks v0.3.1
+  Downloaded parking_lot_core v0.9.12
+  Downloaded quote v1.0.42
+  Downloaded lock_api v0.4.14
+  Downloaded pango v0.15.10
+  Downloaded uuid v1.18.1
+  Downloaded toml v0.8.23
+  Downloaded system-deps v6.2.2
+  Downloaded derive_more v0.99.20
+  Downloaded getrandom v0.3.4
+  Downloaded ryu v1.0.20
+  Downloaded unicode-ident v1.0.22
+  Downloaded bincode v2.0.1
+  Downloaded generic-array v1.3.5
+  Downloaded futures-lite v2.6.1
+  Downloaded primal-sieve v0.3.7
+  Downloaded pomelo v0.1.5
+  Downloaded x11-dl v2.21.0
+  Downloaded toml v0.5.11
+  Downloaded parking_lot v0.12.5
+  Downloaded notify v5.2.0
+  Downloaded zerotrie v0.2.3
+  Downloaded icu_provider v2.1.1
+  Downloaded glib-sys v0.15.10
+  Downloaded logos-derive v0.12.1
+  Downloaded proc-macro2 v1.0.103
+  Downloaded typed-index-collections v3.3.0
+  Downloaded indexmap v2.5.0
+  Downloaded icu_normalizer_data v2.1.1
+  Downloaded x11 v2.21.0
+  Downloaded icu_properties v2.1.1
+  Downloaded icu_normalizer v2.1.1
+  Downloaded serde_core v1.0.228
+  Downloaded socket2 v0.6.1
+  Downloaded serde_derive v1.0.228
+  Downloaded gdk-sys v0.15.1
+  Downloaded soup2 v0.2.1
+  Downloaded icu_locale_core v2.1.1
+  Downloaded dioxus-html v0.3.1
+  Downloaded log v0.4.28
+  Downloaded bytes v1.11.0
+  Downloaded gio-sys v0.15.10
+  Downloaded flate2 v1.1.5
+  Downloaded cfb v0.7.3
+  Downloaded miniz_oxide v0.8.9
+  Downloaded euclid v0.22.11
+  Downloaded gdk v0.15.4
+  Downloaded bumpalo v3.19.0
+  Downloaded cc v1.2.48
+  Downloaded icu_collections v2.1.1
+  Downloaded dioxus-core v0.3.3
+  Downloaded darling_core v0.21.3
+  Downloaded crossbeam-channel v0.5.15
+  Downloaded toml_edit v0.19.15
+  Downloaded toml_edit v0.22.27
+  Downloaded typenum v1.19.0
+  Downloaded http v0.2.12
+  Downloaded gtk-sys v0.15.3
+  Downloaded aho-corasick v1.1.4
+  Downloaded serde v1.0.228
+  Downloaded mio v1.1.0
+  Downloaded memchr v2.7.6
+  Downloaded dioxus-desktop v0.3.0
+  Downloaded webkit2gtk v0.18.2
+  Downloaded zerovec v0.11.5
+  Downloaded icu_properties_data v2.1.1
+  Downloaded png v0.17.16
+  Downloaded interprocess v1.2.1
+  Downloaded gio v0.15.12
+  Downloaded glib v0.15.12
+  Downloaded chrono v0.4.42
+  Downloaded winnow v0.5.40
+  Downloaded idna v1.1.0
+  Downloaded bstr v1.12.1
+  Downloaded syn v2.0.111
+  Downloaded serde_json v1.0.145
+  Downloaded regex v1.12.2
+  Downloaded winnow v0.7.14
+  Downloaded gtk v0.15.5
+  Downloaded tokio v1.48.0
+  Downloaded zerocopy v0.8.31
+  Downloaded regex-syntax v0.8.8
+  Downloaded tao v0.15.8
+  Downloaded regex-automata v0.4.13
+  Downloaded petgraph v0.6.5
+  Downloaded libc v0.2.177
+  Downloaded wry v0.23.4
+  Downloaded osqp-sys v0.6.3
+warning: unused import: `Model`
+   --> src/lib.rs:464:35
+    |
+464 |         use crate::parser::{Item, Model};
+    |                                   ^^^^^
+    |
+    = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `HashSet`
+   --> src/graph_drawing.rs:332:38
+    |
+332 |     use std::{collections::{HashMap, HashSet}, borrow::{Cow, Borrow}, vec::IntoIter, ops::Deref, slice::Iter};
+    |                                      ^^^^^^^
+
+warning: unused import: `*`
+   --> src/graph_drawing.rs:336:45
+    |
+336 |     use crate::graph_drawing::eval::visit::{*, Visit as VisitVal};
+    |                                             ^
+
+warning: unused import: `petgraph::algo::is_cyclic_directed`
+    --> src/graph_drawing.rs:4138:9
+     |
+4138 |     use petgraph::algo::is_cyclic_directed;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unnecessary trailing semicolon
+    --> src/graph_drawing.rs:6376:116
+     |
+6376 |                 let classes = itertools::join(styling.style_by_name.get(container).iter().copied().flatten(), " ");;
+     |                                                                                                                    ^ help: remove this semicolon
+     |
+     = note: `#[warn(redundant_semicolons)]` on by default
+
+warning: unused import: `Borrow`
+   --> src/graph_drawing.rs:332:62
+    |
+332 |     use std::{collections::{HashMap, HashSet}, borrow::{Cow, Borrow}, vec::IntoIter, ops::Deref, slice::Iter};
+    |                                                              ^^^^^^
+
+warning: unused import: `Visit`
+   --> src/graph_drawing.rs:336:48
+    |
+336 |     use crate::graph_drawing::eval::visit::{*, Visit as VisitVal};
+    |                                                ^^^^^
+
+warning: unused variable: `v`
+   --> src/lib.rs:560:62
+    |
+560 |         pub fn visit_text<'s, 't, V: Visit<'s, 't> + ?Sized>(v: &mut V, text: &'t Cow<'s, str>) {
+    |                                                              ^ help: if this is intentional, prefix it with an underscore: `_v`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `text`
+   --> src/lib.rs:560:73
+    |
+560 |         pub fn visit_text<'s, 't, V: Visit<'s, 't> + ?Sized>(v: &mut V, text: &'t Cow<'s, str>) {
+    |                                                                         ^^^^ help: if this is intentional, prefix it with an underscore: `_text`
+
+warning: unused variable: `name`
+   --> src/graph_drawing.rs:647:31
+    |
+647 |                         (Some(name), None, None) => unreachable!(),
+    |                               ^^^^ help: if this is intentional, prefix it with an underscore: `_name`
+
+warning: unused variable: `style`
+   --> src/graph_drawing.rs:718:51
+    |
+718 |                 Val::Process { name, label, body, style } => {
+    |                                                   ^^^^^ help: try ignoring the field: `style: _`
+
+warning: unused variable: `style`
+   --> src/graph_drawing.rs:748:55
+    |
+748 |                 Val::Chain { name, rel, path, labels, style } => {
+    |                                                       ^^^^^ help: try ignoring the field: `style: _`
+
+warning: unused variable: `n`
+   --> src/graph_drawing.rs:865:17
+    |
+865 |                 n => {
+    |                 ^ help: if this is intentional, prefix it with an underscore: `_n`
+
+warning: unused variable: `n`
+   --> src/graph_drawing.rs:894:17
+    |
+894 |                 n => {
+    |                 ^ help: if this is intentional, prefix it with an underscore: `_n`
+
+warning: unused variable: `body`
+    --> src/graph_drawing.rs:1219:36
+     |
+1219 |                 Val::Style { name, body, .. } => {
+     |                                    ^^^^-
+     |                                    |
+     |                                    help: try removing the field
+
+warning: variable does not need to be mutable
+    --> src/graph_drawing.rs:1311:13
+     |
+1311 |         let mut val2 = val.clone();
+     |             ----^^^^
+     |             |
+     |             help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` on by default
+
+warning: unused variable: `v`
+    --> src/graph_drawing.rs:1439:53
+     |
+1439 |         pub fn visit_label<V, T: Visit<V> + ?Sized>(v: &mut T, label: &V) {
+     |                                                     ^ help: if this is intentional, prefix it with an underscore: `_v`
+
+warning: unused variable: `label`
+    --> src/graph_drawing.rs:1439:64
+     |
+1439 |         pub fn visit_label<V, T: Visit<V> + ?Sized>(v: &mut T, label: &V) {
+     |                                                                ^^^^^ help: if this is intentional, prefix it with an underscore: `_label`
+
+warning: unused variable: `v`
+    --> src/graph_drawing.rs:1460:51
+     |
+1460 |         pub fn visit_rel<V, T: Visit<V> + ?Sized>(v: &mut T, rel: &Rel) {
+     |                                                   ^ help: if this is intentional, prefix it with an underscore: `_v`
+
+warning: unused variable: `rel`
+    --> src/graph_drawing.rs:1460:62
+     |
+1460 |         pub fn visit_rel<V, T: Visit<V> + ?Sized>(v: &mut T, rel: &Rel) {
+     |                                                              ^^^ help: if this is intentional, prefix it with an underscore: `_rel`
+
+warning: variable does not need to be mutable
+    --> src/graph_drawing.rs:5797:17
+     |
+5797 |             let mut val = eval(&items);
+     |                 ----^^^
+     |                 |
+     |                 help: remove this `mut`
+
+warning: methods `push` and `append` are never used
+   --> src/graph_drawing.rs:455:12
+    |
+454 |     impl<V> Body<V> {
+    |     --------------- methods in this implementation
+455 |         fn push(&mut self, item: Val<V>) {
+    |            ^^^^
+...
+462 |         fn append(&mut self, rhs: &mut Vec<Val<V>>) {
+    |            ^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: variant `Style` is never constructed
+   --> src/graph_drawing.rs:809:9
+    |
+808 |     enum Thing {
+    |          ----- variant in this enum
+809 |         Style,
+    |         ^^^^^
+    |
+    = note: `Thing` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: methods `append` and `is_empty` are never used
+    --> src/graph_drawing.rs:1191:12
+     |
+1190 |     impl<'s> Model<'s> {
+     |     ------------------ methods in this implementation
+1191 |         fn append(&mut self, rhs: &mut Vec<Val<Cow<'s, str>>>) {
+     |            ^^^^^^
+...
+1280 |         fn is_empty(&self) -> bool {
+     |            ^^^^^^^^
+
+warning: field `0` is never read
+    --> src/graph_drawing.rs:4744:22
+     |
+4744 |         VerticalEdge(String),
+     |         ------------ ^^^^^^
+     |         |
+     |         field in this variant
+     |
+     = note: `ObjEdgeReason` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+     |
+4744 |         VerticalEdge(()),
+     |                      ~~
+
+warning: field `0` is never read
+    --> src/graph_drawing.rs:4745:24
+     |
+4745 |         HorizontalEdge(String),
+     |         -------------- ^^^^^^
+     |         |
+     |         field in this variant
+     |
+     = note: `ObjEdgeReason` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+     |
+4745 |         HorizontalEdge(()),
+     |                        ~~
+
+warning: using `.clone()` on a double reference, which returns `&(VerticalRank, OriginalHorizontalRank)` instead of cloning the inner type
+    --> src/graph_drawing.rs:3587:39
+     |
+3587 |             n2l.sort_by_key(|(_, l)| l.clone());
+     |                                       ^^^^^^^^
+     |
+     = note: `#[warn(suspicious_double_ref_op)]` on by default
+
+warning: `depict` (lib) generated 27 warnings (run `cargo fix --lib -p depict` to apply 7 suggestions)
+warning: unused import: `std::collections::HashMap`
+   --> dioxus/src/main.rs:131:9
+    |
+131 |     use std::collections::HashMap;
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` on by default
+
+warning: variable does not need to be mutable
+   --> dioxus/src/main.rs:153:9
+    |
+153 |     let mut val = eval(&items);
+    |         ----^^^
+    |         |
+    |         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: `depict-desktop` (bin "depict-desktop") generated 2 warnings (run `cargo fix --bin "depict-desktop"` to apply 2 suggestions)
+    Finished `release` profile [optimized + debuginfo] target(s) in 25.14s
+warning: the following packages contain code that will be rejected by a future version of Rust: svg v0.10.0
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 3`
+✓ Desktop built
+
+4. Building server...
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /workspace/dioxus/Cargo.toml
+workspace: /workspace/Cargo.toml
+ Downloading crates ...
+  Downloaded Inflector v0.11.4
+  Downloaded http-body v0.4.6
+  Downloaded http-range-header v0.3.1
+  Downloaded axum-core v0.1.2
+  Downloaded async-compression v0.3.15
+  Downloaded tracing-error v0.2.1
+  Downloaded tracing-attributes v0.1.31
+  Downloaded iri-string v0.4.1
+  Downloaded matchit v0.4.6
+  Downloaded pin-project-internal v1.1.10
+  Downloaded unicase v2.8.1
+  Downloaded nu-ansi-term v0.50.3
+  Downloaded httparse v1.10.1
+  Downloaded pin-project v1.1.10
+  Downloaded axum v0.4.8
+  Downloaded tracing-core v0.1.35
+  Downloaded tower-http v0.2.5
+  Downloaded socket2 v0.5.10
+  Downloaded tracing v0.1.43
+  Downloaded minimal-lexical v0.2.1
+  Downloaded brotli-decompressor v2.5.1
+  Downloaded hyper v0.14.32
+  Downloaded nom v7.1.3
+  Downloaded tokio-util v0.7.17
+  Downloaded tracing-subscriber v0.3.22
+  Downloaded brotli v3.5.0
+warning: unused import: `Model`
+   --> src/lib.rs:464:35
+    |
+464 |         use crate::parser::{Item, Model};
+    |                                   ^^^^^
+    |
+    = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `HashSet`
+   --> src/graph_drawing.rs:332:38
+    |
+332 |     use std::{collections::{HashMap, HashSet}, borrow::{Cow, Borrow}, vec::IntoIter, ops::Deref, slice::Iter};
+    |                                      ^^^^^^^
+
+warning: unused import: `*`
+   --> src/graph_drawing.rs:336:45
+    |
+336 |     use crate::graph_drawing::eval::visit::{*, Visit as VisitVal};
+    |                                             ^
+
+warning: unused import: `petgraph::algo::is_cyclic_directed`
+    --> src/graph_drawing.rs:4138:9
+     |
+4138 |     use petgraph::algo::is_cyclic_directed;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unnecessary trailing semicolon
+    --> src/graph_drawing.rs:6376:116
+     |
+6376 |                 let classes = itertools::join(styling.style_by_name.get(container).iter().copied().flatten(), " ");;
+     |                                                                                                                    ^ help: remove this semicolon
+     |
+     = note: `#[warn(redundant_semicolons)]` on by default
+
+warning: unused import: `Borrow`
+   --> src/graph_drawing.rs:332:62
+    |
+332 |     use std::{collections::{HashMap, HashSet}, borrow::{Cow, Borrow}, vec::IntoIter, ops::Deref, slice::Iter};
+    |                                                              ^^^^^^
+
+warning: unused import: `Visit`
+   --> src/graph_drawing.rs:336:48
+    |
+336 |     use crate::graph_drawing::eval::visit::{*, Visit as VisitVal};
+    |                                                ^^^^^
+
+warning: unused variable: `v`
+   --> src/lib.rs:560:62
+    |
+560 |         pub fn visit_text<'s, 't, V: Visit<'s, 't> + ?Sized>(v: &mut V, text: &'t Cow<'s, str>) {
+    |                                                              ^ help: if this is intentional, prefix it with an underscore: `_v`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `text`
+   --> src/lib.rs:560:73
+    |
+560 |         pub fn visit_text<'s, 't, V: Visit<'s, 't> + ?Sized>(v: &mut V, text: &'t Cow<'s, str>) {
+    |                                                                         ^^^^ help: if this is intentional, prefix it with an underscore: `_text`
+
+warning: unused variable: `name`
+   --> src/graph_drawing.rs:647:31
+    |
+647 |                         (Some(name), None, None) => unreachable!(),
+    |                               ^^^^ help: if this is intentional, prefix it with an underscore: `_name`
+
+warning: unused variable: `style`
+   --> src/graph_drawing.rs:718:51
+    |
+718 |                 Val::Process { name, label, body, style } => {
+    |                                                   ^^^^^ help: try ignoring the field: `style: _`
+
+warning: unused variable: `style`
+   --> src/graph_drawing.rs:748:55
+    |
+748 |                 Val::Chain { name, rel, path, labels, style } => {
+    |                                                       ^^^^^ help: try ignoring the field: `style: _`
+
+warning: unused variable: `n`
+   --> src/graph_drawing.rs:865:17
+    |
+865 |                 n => {
+    |                 ^ help: if this is intentional, prefix it with an underscore: `_n`
+
+warning: unused variable: `n`
+   --> src/graph_drawing.rs:894:17
+    |
+894 |                 n => {
+    |                 ^ help: if this is intentional, prefix it with an underscore: `_n`
+
+warning: unused variable: `body`
+    --> src/graph_drawing.rs:1219:36
+     |
+1219 |                 Val::Style { name, body, .. } => {
+     |                                    ^^^^-
+     |                                    |
+     |                                    help: try removing the field
+
+warning: variable does not need to be mutable
+    --> src/graph_drawing.rs:1311:13
+     |
+1311 |         let mut val2 = val.clone();
+     |             ----^^^^
+     |             |
+     |             help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` on by default
+
+warning: unused variable: `v`
+    --> src/graph_drawing.rs:1439:53
+     |
+1439 |         pub fn visit_label<V, T: Visit<V> + ?Sized>(v: &mut T, label: &V) {
+     |                                                     ^ help: if this is intentional, prefix it with an underscore: `_v`
+
+warning: unused variable: `label`
+    --> src/graph_drawing.rs:1439:64
+     |
+1439 |         pub fn visit_label<V, T: Visit<V> + ?Sized>(v: &mut T, label: &V) {
+     |                                                                ^^^^^ help: if this is intentional, prefix it with an underscore: `_label`
+
+warning: unused variable: `v`
+    --> src/graph_drawing.rs:1460:51
+     |
+1460 |         pub fn visit_rel<V, T: Visit<V> + ?Sized>(v: &mut T, rel: &Rel) {
+     |                                                   ^ help: if this is intentional, prefix it with an underscore: `_v`
+
+warning: unused variable: `rel`
+    --> src/graph_drawing.rs:1460:62
+     |
+1460 |         pub fn visit_rel<V, T: Visit<V> + ?Sized>(v: &mut T, rel: &Rel) {
+     |                                                              ^^^ help: if this is intentional, prefix it with an underscore: `_rel`
+
+warning: variable does not need to be mutable
+    --> src/graph_drawing.rs:5797:17
+     |
+5797 |             let mut val = eval(&items);
+     |                 ----^^^
+     |                 |
+     |                 help: remove this `mut`
+
+warning: methods `push` and `append` are never used
+   --> src/graph_drawing.rs:455:12
+    |
+454 |     impl<V> Body<V> {
+    |     --------------- methods in this implementation
+455 |         fn push(&mut self, item: Val<V>) {
+    |            ^^^^
+...
+462 |         fn append(&mut self, rhs: &mut Vec<Val<V>>) {
+    |            ^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: variant `Style` is never constructed
+   --> src/graph_drawing.rs:809:9
+    |
+808 |     enum Thing {
+    |          ----- variant in this enum
+809 |         Style,
+    |         ^^^^^
+    |
+    = note: `Thing` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: methods `append` and `is_empty` are never used
+    --> src/graph_drawing.rs:1191:12
+     |
+1190 |     impl<'s> Model<'s> {
+     |     ------------------ methods in this implementation
+1191 |         fn append(&mut self, rhs: &mut Vec<Val<Cow<'s, str>>>) {
+     |            ^^^^^^
+...
+1280 |         fn is_empty(&self) -> bool {
+     |            ^^^^^^^^
+
+warning: field `0` is never read
+    --> src/graph_drawing.rs:4744:22
+     |
+4744 |         VerticalEdge(String),
+     |         ------------ ^^^^^^
+     |         |
+     |         field in this variant
+     |
+     = note: `ObjEdgeReason` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+     |
+4744 |         VerticalEdge(()),
+     |                      ~~
+
+warning: field `0` is never read
+    --> src/graph_drawing.rs:4745:24
+     |
+4745 |         HorizontalEdge(String),
+     |         -------------- ^^^^^^
+     |         |
+     |         field in this variant
+     |
+     = note: `ObjEdgeReason` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+     |
+4745 |         HorizontalEdge(()),
+     |                        ~~
+
+warning: using `.clone()` on a double reference, which returns `&(VerticalRank, OriginalHorizontalRank)` instead of cloning the inner type
+    --> src/graph_drawing.rs:3587:39
+     |
+3587 |             n2l.sort_by_key(|(_, l)| l.clone());
+     |                                       ^^^^^^^^
+     |
+     = note: `#[warn(suspicious_double_ref_op)]` on by default
+
+warning: `depict` (lib) generated 27 warnings (run `cargo fix --lib -p depict` to apply 7 suggestions)
+   Compiling depict-server v0.3.0 (/workspace/server)
+warning: unused import: `std::borrow::Cow`
+ --> server/src/main.rs:1:5
+  |
+1 | use std::borrow::Cow;
+  |     ^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `depict::graph_drawing::error::Kind`
+ --> server/src/main.rs:8:5
+  |
+8 | use depict::graph_drawing::error::Kind;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `depict::graph_drawing::error::OrErrExt`
+ --> server/src/main.rs:9:5
+  |
+9 | use depict::graph_drawing::error::OrErrExt;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `depict::graph_drawing::index::OriginalHorizontalRank`
+  --> server/src/main.rs:10:5
+   |
+10 | use depict::graph_drawing::index::OriginalHorizontalRank;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `depict::graph_drawing::index::VerticalRank`
+  --> server/src/main.rs:11:5
+   |
+11 | use depict::graph_drawing::index::VerticalRank;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `depict::graph_drawing::layout::Obj`
+  --> server/src/main.rs:12:5
+   |
+12 | use depict::graph_drawing::layout::Obj;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `inflector::Inflector`
+  --> server/src/main.rs:14:5
+   |
+14 | use inflector::Inflector;
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `Level` and `event`
+  --> server/src/main.rs:18:27
+   |
+18 | use tracing::{instrument, event, Level};
+   |                           ^^^^^  ^^^^^
+
+warning: `depict-server` (bin "depict-server") generated 8 warnings (run `cargo fix --bin "depict-server"` to apply 8 suggestions)
+    Finished `release` profile [optimized + debuginfo] target(s) in 20.07s
+warning: the following packages contain code that will be rejected by a future version of Rust: svg v0.10.0
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 3`
+✓ Server built
+
+5. Building web WASM...
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /workspace/dioxus/Cargo.toml
+workspace: /workspace/Cargo.toml
+ Downloading crates ...
+  Downloaded itertools v0.9.0
+  Downloaded sledgehammer_utils v0.1.1
+  Downloaded gloo-timers v0.2.6
+  Downloaded cty v0.2.2
+  Downloaded ux v0.1.6
+  Downloaded wasm-bindgen-futures v0.4.56
+  Downloaded lru v0.8.1
+  Downloaded cstr_core v0.2.6
+  Downloaded wasm-bindgen-shared v0.2.106
+  Downloaded smallstr v0.2.0
+  Downloaded serde-wasm-bindgen v0.4.5
+  Downloaded dioxus-web v0.3.2
+  Downloaded wasm-logger v0.2.0
+  Downloaded js-sys v0.3.83
+  Downloaded getrandom v0.2.16
+  Downloaded wasm-bindgen-macro-support v0.2.106
+  Downloaded wasm-bindgen-macro v0.2.106
+  Downloaded wasm-bindgen v0.2.106
+  Downloaded console_error_panic_hook v0.1.7
+  Downloaded web-sys v0.3.83
+  Downloaded sledgehammer_bindgen v0.2.4
+  Downloaded printf-compat v0.1.1
+warning: unused import: `Model`
+   --> src/lib.rs:464:35
+    |
+464 |         use crate::parser::{Item, Model};
+    |                                   ^^^^^
+    |
+    = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `HashSet`
+   --> src/graph_drawing.rs:332:38
+    |
+332 |     use std::{collections::{HashMap, HashSet}, borrow::{Cow, Borrow}, vec::IntoIter, ops::Deref, slice::Iter};
+    |                                      ^^^^^^^
+
+warning: unused import: `*`
+   --> src/graph_drawing.rs:336:45
+    |
+336 |     use crate::graph_drawing::eval::visit::{*, Visit as VisitVal};
+    |                                             ^
+
+warning: unused import: `Instant`
+    --> src/graph_drawing.rs:3282:25
+     |
+3282 |         use std::time::{Instant, Duration};
+     |                         ^^^^^^^
+
+warning: unused import: `petgraph::algo::is_cyclic_directed`
+    --> src/graph_drawing.rs:4138:9
+     |
+4138 |     use petgraph::algo::is_cyclic_directed;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unnecessary trailing semicolon
+    --> src/graph_drawing.rs:6376:116
+     |
+6376 |                 let classes = itertools::join(styling.style_by_name.get(container).iter().copied().flatten(), " ");;
+     |                                                                                                                    ^ help: remove this semicolon
+     |
+     = note: `#[warn(redundant_semicolons)]` on by default
+
+warning: unused import: `Borrow`
+   --> src/graph_drawing.rs:332:62
+    |
+332 |     use std::{collections::{HashMap, HashSet}, borrow::{Cow, Borrow}, vec::IntoIter, ops::Deref, slice::Iter};
+    |                                                              ^^^^^^
+
+warning: unused import: `Visit`
+   --> src/graph_drawing.rs:336:48
+    |
+336 |     use crate::graph_drawing::eval::visit::{*, Visit as VisitVal};
+    |                                                ^^^^^
+
+warning: unused variable: `v`
+   --> src/lib.rs:560:62
+    |
+560 |         pub fn visit_text<'s, 't, V: Visit<'s, 't> + ?Sized>(v: &mut V, text: &'t Cow<'s, str>) {
+    |                                                              ^ help: if this is intentional, prefix it with an underscore: `_v`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `text`
+   --> src/lib.rs:560:73
+    |
+560 |         pub fn visit_text<'s, 't, V: Visit<'s, 't> + ?Sized>(v: &mut V, text: &'t Cow<'s, str>) {
+    |                                                                         ^^^^ help: if this is intentional, prefix it with an underscore: `_text`
+
+warning: unused variable: `name`
+   --> src/graph_drawing.rs:647:31
+    |
+647 |                         (Some(name), None, None) => unreachable!(),
+    |                               ^^^^ help: if this is intentional, prefix it with an underscore: `_name`
+
+warning: unused variable: `style`
+   --> src/graph_drawing.rs:718:51
+    |
+718 |                 Val::Process { name, label, body, style } => {
+    |                                                   ^^^^^ help: try ignoring the field: `style: _`
+
+warning: unused variable: `style`
+   --> src/graph_drawing.rs:748:55
+    |
+748 |                 Val::Chain { name, rel, path, labels, style } => {
+    |                                                       ^^^^^ help: try ignoring the field: `style: _`
+
+warning: unused variable: `n`
+   --> src/graph_drawing.rs:865:17
+    |
+865 |                 n => {
+    |                 ^ help: if this is intentional, prefix it with an underscore: `_n`
+
+warning: unused variable: `n`
+   --> src/graph_drawing.rs:894:17
+    |
+894 |                 n => {
+    |                 ^ help: if this is intentional, prefix it with an underscore: `_n`
+
+warning: unused variable: `body`
+    --> src/graph_drawing.rs:1219:36
+     |
+1219 |                 Val::Style { name, body, .. } => {
+     |                                    ^^^^-
+     |                                    |
+     |                                    help: try removing the field
+
+warning: variable does not need to be mutable
+    --> src/graph_drawing.rs:1311:13
+     |
+1311 |         let mut val2 = val.clone();
+     |             ----^^^^
+     |             |
+     |             help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` on by default
+
+warning: unused variable: `v`
+    --> src/graph_drawing.rs:1439:53
+     |
+1439 |         pub fn visit_label<V, T: Visit<V> + ?Sized>(v: &mut T, label: &V) {
+     |                                                     ^ help: if this is intentional, prefix it with an underscore: `_v`
+
+warning: unused variable: `label`
+    --> src/graph_drawing.rs:1439:64
+     |
+1439 |         pub fn visit_label<V, T: Visit<V> + ?Sized>(v: &mut T, label: &V) {
+     |                                                                ^^^^^ help: if this is intentional, prefix it with an underscore: `_label`
+
+warning: unused variable: `v`
+    --> src/graph_drawing.rs:1460:51
+     |
+1460 |         pub fn visit_rel<V, T: Visit<V> + ?Sized>(v: &mut T, rel: &Rel) {
+     |                                                   ^ help: if this is intentional, prefix it with an underscore: `_v`
+
+warning: unused variable: `rel`
+    --> src/graph_drawing.rs:1460:62
+     |
+1460 |         pub fn visit_rel<V, T: Visit<V> + ?Sized>(v: &mut T, rel: &Rel) {
+     |                                                              ^^^ help: if this is intentional, prefix it with an underscore: `_rel`
+
+warning: variable does not need to be mutable
+    --> src/graph_drawing.rs:5797:17
+     |
+5797 |             let mut val = eval(&items);
+     |                 ----^^^
+     |                 |
+     |                 help: remove this `mut`
+
+warning: methods `push` and `append` are never used
+   --> src/graph_drawing.rs:455:12
+    |
+454 |     impl<V> Body<V> {
+    |     --------------- methods in this implementation
+455 |         fn push(&mut self, item: Val<V>) {
+    |            ^^^^
+...
+462 |         fn append(&mut self, rhs: &mut Vec<Val<V>>) {
+    |            ^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: variant `Style` is never constructed
+   --> src/graph_drawing.rs:809:9
+    |
+808 |     enum Thing {
+    |          ----- variant in this enum
+809 |         Style,
+    |         ^^^^^
+    |
+    = note: `Thing` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: methods `append` and `is_empty` are never used
+    --> src/graph_drawing.rs:1191:12
+     |
+1190 |     impl<'s> Model<'s> {
+     |     ------------------ methods in this implementation
+1191 |         fn append(&mut self, rhs: &mut Vec<Val<Cow<'s, str>>>) {
+     |            ^^^^^^
+...
+1280 |         fn is_empty(&self) -> bool {
+     |            ^^^^^^^^
+
+warning: field `0` is never read
+    --> src/graph_drawing.rs:4744:22
+     |
+4744 |         VerticalEdge(String),
+     |         ------------ ^^^^^^
+     |         |
+     |         field in this variant
+     |
+     = note: `ObjEdgeReason` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+     |
+4744 |         VerticalEdge(()),
+     |                      ~~
+
+warning: field `0` is never read
+    --> src/graph_drawing.rs:4745:24
+     |
+4745 |         HorizontalEdge(String),
+     |         -------------- ^^^^^^
+     |         |
+     |         field in this variant
+     |
+     = note: `ObjEdgeReason` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+     |
+4745 |         HorizontalEdge(()),
+     |                        ~~
+
+warning: using `.clone()` on a double reference, which returns `&(VerticalRank, OriginalHorizontalRank)` instead of cloning the inner type
+    --> src/graph_drawing.rs:3587:39
+     |
+3587 |             n2l.sort_by_key(|(_, l)| l.clone());
+     |                                       ^^^^^^^^
+     |
+     = note: `#[warn(suspicious_double_ref_op)]` on by default
+
+warning: `depict` (lib) generated 28 warnings (run `cargo fix --lib -p depict` to apply 8 suggestions)
+warning: unused variable: `model`
+   --> web/src/main.rs:173:36
+    |
+173 |         to_owned![drawing, status, model]; // Capture all necessary states
+    |                                    ^^^^^
+    |
+help: `model` is captured in macro and introduced a unused variable
+   --> web/src/main.rs:173:9
+    |
+173 |         to_owned![drawing, status, model]; // Capture all necessary states
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: `#[warn(unused_variables)]` on by default
+    = note: this warning originates in the macro `to_owned` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: `depict-web` (bin "depict-web") generated 1 warning
+    Finished `release` profile [optimized + debuginfo] target(s) in 1.54s
+warning: the following packages contain code that will be rejected by a future version of Rust: svg v0.10.0
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 3`
+✓ Web WASM built
+
+6. Building web assets...
+2025-12-04T23:57:59.473697Z  INFO Starting trunk 0.21.4
+2025-12-04T23:57:59.490963Z  INFO starting build
+2025-12-04T23:58:01.108710Z  INFO Found an update of trunk: 0.21.4 -> 0.21.14
+2025-12-04T23:58:29.368056Z  INFO downloading sass version="1.69.5"
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /workspace/dioxus/Cargo.toml
+workspace: /workspace/Cargo.toml
+warning: unused import: `Model`
+   --> src/lib.rs:464:35
+    |
+464 |         use crate::parser::{Item, Model};
+    |                                   ^^^^^
+    |
+    = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `HashSet`
+   --> src/graph_drawing.rs:332:38
+    |
+332 |     use std::{collections::{HashMap, HashSet}, borrow::{Cow, Borrow}, vec::IntoIter, ops::Deref, slice::Iter};
+    |                                      ^^^^^^^
+
+warning: unused import: `*`
+   --> src/graph_drawing.rs:336:45
+    |
+336 |     use crate::graph_drawing::eval::visit::{*, Visit as VisitVal};
+    |                                             ^
+
+warning: unused import: `Instant`
+    --> src/graph_drawing.rs:3282:25
+     |
+3282 |         use std::time::{Instant, Duration};
+     |                         ^^^^^^^
+
+warning: unused import: `petgraph::algo::is_cyclic_directed`
+    --> src/graph_drawing.rs:4138:9
+     |
+4138 |     use petgraph::algo::is_cyclic_directed;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unnecessary trailing semicolon
+    --> src/graph_drawing.rs:6376:116
+     |
+6376 |                 let classes = itertools::join(styling.style_by_name.get(container).iter().copied().flatten(), " ");;
+     |                                                                                                                    ^ help: remove this semicolon
+     |
+     = note: `#[warn(redundant_semicolons)]` on by default
+
+warning: unused import: `Borrow`
+   --> src/graph_drawing.rs:332:62
+    |
+332 |     use std::{collections::{HashMap, HashSet}, borrow::{Cow, Borrow}, vec::IntoIter, ops::Deref, slice::Iter};
+    |                                                              ^^^^^^
+
+warning: unused import: `Visit`
+   --> src/graph_drawing.rs:336:48
+    |
+336 |     use crate::graph_drawing::eval::visit::{*, Visit as VisitVal};
+    |                                                ^^^^^
+
+warning: unused variable: `v`
+   --> src/lib.rs:560:62
+    |
+560 |         pub fn visit_text<'s, 't, V: Visit<'s, 't> + ?Sized>(v: &mut V, text: &'t Cow<'s, str>) {
+    |                                                              ^ help: if this is intentional, prefix it with an underscore: `_v`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `text`
+   --> src/lib.rs:560:73
+    |
+560 |         pub fn visit_text<'s, 't, V: Visit<'s, 't> + ?Sized>(v: &mut V, text: &'t Cow<'s, str>) {
+    |                                                                         ^^^^ help: if this is intentional, prefix it with an underscore: `_text`
+
+warning: unused variable: `name`
+   --> src/graph_drawing.rs:647:31
+    |
+647 |                         (Some(name), None, None) => unreachable!(),
+    |                               ^^^^ help: if this is intentional, prefix it with an underscore: `_name`
+
+warning: unused variable: `style`
+   --> src/graph_drawing.rs:718:51
+    |
+718 |                 Val::Process { name, label, body, style } => {
+    |                                                   ^^^^^ help: try ignoring the field: `style: _`
+
+warning: unused variable: `style`
+   --> src/graph_drawing.rs:748:55
+    |
+748 |                 Val::Chain { name, rel, path, labels, style } => {
+    |                                                       ^^^^^ help: try ignoring the field: `style: _`
+
+warning: unused variable: `n`
+   --> src/graph_drawing.rs:865:17
+    |
+865 |                 n => {
+    |                 ^ help: if this is intentional, prefix it with an underscore: `_n`
+
+warning: unused variable: `n`
+   --> src/graph_drawing.rs:894:17
+    |
+894 |                 n => {
+    |                 ^ help: if this is intentional, prefix it with an underscore: `_n`
+
+warning: unused variable: `body`
+    --> src/graph_drawing.rs:1219:36
+     |
+1219 |                 Val::Style { name, body, .. } => {
+     |                                    ^^^^-
+     |                                    |
+     |                                    help: try removing the field
+
+warning: variable does not need to be mutable
+    --> src/graph_drawing.rs:1311:13
+     |
+1311 |         let mut val2 = val.clone();
+     |             ----^^^^
+     |             |
+     |             help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` on by default
+
+warning: unused variable: `v`
+    --> src/graph_drawing.rs:1439:53
+     |
+1439 |         pub fn visit_label<V, T: Visit<V> + ?Sized>(v: &mut T, label: &V) {
+     |                                                     ^ help: if this is intentional, prefix it with an underscore: `_v`
+
+warning: unused variable: `label`
+    --> src/graph_drawing.rs:1439:64
+     |
+1439 |         pub fn visit_label<V, T: Visit<V> + ?Sized>(v: &mut T, label: &V) {
+     |                                                                ^^^^^ help: if this is intentional, prefix it with an underscore: `_label`
+
+warning: unused variable: `v`
+    --> src/graph_drawing.rs:1460:51
+     |
+1460 |         pub fn visit_rel<V, T: Visit<V> + ?Sized>(v: &mut T, rel: &Rel) {
+     |                                                   ^ help: if this is intentional, prefix it with an underscore: `_v`
+
+warning: unused variable: `rel`
+    --> src/graph_drawing.rs:1460:62
+     |
+1460 |         pub fn visit_rel<V, T: Visit<V> + ?Sized>(v: &mut T, rel: &Rel) {
+     |                                                              ^^^ help: if this is intentional, prefix it with an underscore: `_rel`
+
+warning: variable does not need to be mutable
+    --> src/graph_drawing.rs:5797:17
+     |
+5797 |             let mut val = eval(&items);
+     |                 ----^^^
+     |                 |
+     |                 help: remove this `mut`
+
+warning: methods `push` and `append` are never used
+   --> src/graph_drawing.rs:455:12
+    |
+454 |     impl<V> Body<V> {
+    |     --------------- methods in this implementation
+455 |         fn push(&mut self, item: Val<V>) {
+    |            ^^^^
+...
+462 |         fn append(&mut self, rhs: &mut Vec<Val<V>>) {
+    |            ^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: variant `Style` is never constructed
+   --> src/graph_drawing.rs:809:9
+    |
+808 |     enum Thing {
+    |          ----- variant in this enum
+809 |         Style,
+    |         ^^^^^
+    |
+    = note: `Thing` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: methods `append` and `is_empty` are never used
+    --> src/graph_drawing.rs:1191:12
+     |
+1190 |     impl<'s> Model<'s> {
+     |     ------------------ methods in this implementation
+1191 |         fn append(&mut self, rhs: &mut Vec<Val<Cow<'s, str>>>) {
+     |            ^^^^^^
+...
+1280 |         fn is_empty(&self) -> bool {
+     |            ^^^^^^^^
+
+warning: field `0` is never read
+    --> src/graph_drawing.rs:4744:22
+     |
+4744 |         VerticalEdge(String),
+     |         ------------ ^^^^^^
+     |         |
+     |         field in this variant
+     |
+     = note: `ObjEdgeReason` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+     |
+4744 |         VerticalEdge(()),
+     |                      ~~
+
+warning: field `0` is never read
+    --> src/graph_drawing.rs:4745:24
+     |
+4745 |         HorizontalEdge(String),
+     |         -------------- ^^^^^^
+     |         |
+     |         field in this variant
+     |
+     = note: `ObjEdgeReason` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+     |
+4745 |         HorizontalEdge(()),
+     |                        ~~
+
+warning: using `.clone()` on a double reference, which returns `&(VerticalRank, OriginalHorizontalRank)` instead of cloning the inner type
+    --> src/graph_drawing.rs:3587:39
+     |
+3587 |             n2l.sort_by_key(|(_, l)| l.clone());
+     |                                       ^^^^^^^^
+     |
+     = note: `#[warn(suspicious_double_ref_op)]` on by default
+
+warning: `depict` (lib) generated 28 warnings (run `cargo fix --lib -p depict` to apply 8 suggestions)
+warning: unused variable: `model`
+   --> web/src/main.rs:173:36
+    |
+173 |         to_owned![drawing, status, model]; // Capture all necessary states
+    |                                    ^^^^^
+    |
+help: `model` is captured in macro and introduced a unused variable
+   --> web/src/main.rs:173:9
+    |
+173 |         to_owned![drawing, status, model]; // Capture all necessary states
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: `#[warn(unused_variables)]` on by default
+    = note: this warning originates in the macro `to_owned` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: `depict-web` (bin "depict-web") generated 1 warning
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.76s
+warning: the following packages contain code that will be rejected by a future version of Rust: svg v0.10.0
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 3`
+2025-12-04T23:58:30.924970Z  INFO installing sass
+2025-12-04T23:58:31.087366Z  INFO downloading wasm-bindgen version="0.2.106"
+2025-12-04T23:58:35.177400Z  INFO installing wasm-bindgen
+2025-12-04T23:58:36.952566Z  INFO applying new distribution
+2025-12-04T23:58:36.956258Z  INFO success
+✓ Web assets built
+
+7. Organizing build artifacts...
+✓ Copied binaries
+✓ Copied web assets
+✓ Set executable permissions
+
+✓ Created run script
+
+================================================================
+✅ BUILD COMPLETE
+================================================================
+Build directory: build_20251204_235711
+
+Contents:
+  depict-desktop                        36M
+  depict-server                         18M
+  depict-web-57bd1f83897dc648.js        38K
+  depict-web-57bd1f83897dc648_bg.wasm       4.8M
+  index-597d90855083f957.css              1
+  index.html                           1.5K
+
+To run the server:
+  cd build_20251204_235711
+  ./run-server.sh
+
+Or manually:
+  WEBROOT=build_20251204_235711/dist build_20251204_235711/dist/depict-server
+
+Then open: http://localhost:8000
+================================================================
+Completed at: Thu Dec  4 23:58:37 UTC 2025
+
+Build completed: Thu Dec  4 23:58:37 UTC 2025
+Build artifacts are in the workspace directory

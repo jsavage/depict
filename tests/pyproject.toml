@@ -1,0 +1,11 @@
+[project]
+name = "test-harness-project"
+version = "0.1.0"
+description = "Project for testing web endpoints"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+[project.scripts]
+test-local = "test_harness:main"
+
+[tool.uv]
+#dev-dependencies = []

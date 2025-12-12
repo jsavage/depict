@@ -1,0 +1,71 @@
+    1  cat >fix-all-build-issues.sh
+    2  chmod +x fix-all-build-issues.sh
+    3  ./fix-all-build-issues.sh 
+    4  # 1. Clear the poisoned cached crates
+    5  rm -rf ~/.cargo/registry/src/index.crates.io-6f17d22bba15001f/home-0.5.12
+    6  rm -rf ~/.cargo/registry/src/index.crates.io-6f17d22bba15001f/globset-0.4.18
+    7  rm -rf ~/.cargo/registry/cache/index.crates.io-6f17d22bba15001f/home-0.5.12*
+    8  rm -rf ~/.cargo/registry/cache/index.crates.io-6f17d22bba15001f/globset-0.4.18*
+    9  # 2. If you have a Cargo.lock, delete it to start fresh
+   10  rm -f Cargo.lock
+   11  # 3. Create a minimal Cargo.lock with compatible versions
+   12  cat > Cargo.lock << 'EOF'
+# This is a placeholder - cargo will regenerate it
+version = 3
+EOF
+
+   13  # 4. Apply all fixes
+   14  sed -i '70s/{text, hpos, width, vpos}/{text, hpos, width, vpos, ..}/' server/src/main.rs
+   15  sed -i 's/inflector =/Inflector =/' server/Cargo.toml
+   16  sed -i 's/#"server"/"server"/' Cargo.toml
+   17  sed -i 's/#"tikz"/"tikz"/' Cargo.toml
+   18  # 5. Generate lockfile WITHOUT updating
+   19  cargo generate-lockfile
+   20  cargo update -p home --precise 0.5.5
+   21  cargo update -p globset --precise 0.4.14
+   22  cargo update -p ignore --precise 0.4.20
+   23  cargo update -p indexmap:2.12.1 --precise 2.6.0 2>/dev/null || true
+   24  cargo update -p hashbrown:0.15.5 --precise 0.14.5 2>/dev/null || true
+   25  # Downgrade in the correct order (ignore first, then globset)
+   26  cargo update -p ignore --precise 0.4.20
+   27  cargo update -p globset --precise 0.4.14
+   28  cargo update -p indexmap:2.12.1 --precise 2.6.0
+   29  cargo update -p hashbrown:0.15.5 --precise 0.14.5
+   30  cd /workspace
+   31  # Downgrade indexmap to a version compatible with hashbrown 0.14
+   32  cargo update -p indexmap:2.6.0 --precise 2.5.0
+   33  # Now downgrade hashbrown
+   34  cargo update -p hashbrown:0.15.5 --precise 0.14.5
+   35  # Verify with fetch
+   36  cargo fetch
+   37  # If that works, build
+   38  cargo build --release -p depict-desktop
+   39  # Try indexmap 2.2.0 which should work with hashbrown 0.14
+   40  cargo update -p indexmap:2.6.0 --precise 2.2.0
+   41  # Check current state
+   42  cargo tree -p indexmap 2>/dev/null | head -20
+   43  # Try downgrading from 2.5.0
+   44  cargo update -p indexmap:2.5.0 --precise 2.2.0
+   45  # Then hashbrown
+   46  cargo update -p hashbrown:0.15.5 --precise 0.14.5
+   47  # Test
+   48  cargo fetch
+   49  # Check current versions
+   50  grep -A 2 "name = \"indexmap\"" Cargo.lock | grep version
+   51  grep -A 2 "name = \"hashbrown\"" Cargo.lock | grep version
+   52  # Just try building now - we might already have compatible versions
+   53  cargo build --release -p depict-desktop
+   54  ls
+   55  cat Dockerfile
+   56  mv Dockerfile Dockerfile.bak
+   57  cat > Dockerfile
+   58  ls
+   59  cat docker_build_U22.04.sh 
+   60  mv docker_build_U22.04.sh docker_build_U22.04_on_host.sh 
+   61  cat > build_depict_wf.yml
+   62  ls
+   63  cp build.sh build.bak
+   64  cat > build.sh
+   65  ls 
+   66  cat > docker-build.sh
+   67  history >history-30.11.25.txt
