@@ -1,6 +1,6 @@
 #![feature(c_variadic)]
 
-use std::{default::Default, panic::catch_unwind, time::Duration};
+use std::{default::Default, panic::catch_unwind};
 
 use depict::{graph_drawing::{
     frontend::{dom::{draw, Drawing}, dioxus::DEFAULT_CSS},
@@ -13,10 +13,31 @@ use futures::StreamExt;
 use indoc::indoc;
 
 use tracing::{event, Level};
+
+// ============================================================================
+// FEATURE FLAGS - Change these to enable/disable features
+// ============================================================================
+const ENABLE_STATUS_TRACKING: bool = true;      // Status labels (Ready, Processing, Error)
+const ENABLE_TIMEOUT_DETECTION: bool = true;    // 5-second timeout for processing
+const ENABLE_HISTORY: bool = true;              // Undo/Redo functionality
+const ENABLE_TEST_CONTROLS: bool = true;        // Debug test controls panel
+
+// Conditional imports based on features
+#[cfg(any(
+    all(feature = "timeout", not(feature = "no-timeout")),
+    all(not(feature = "no-timeout"), ENABLE_TIMEOUT_DETECTION)
+))]
+use std::time::Duration;
+
+#[cfg(any(
+    all(feature = "timeout", not(feature = "no-timeout")),
+    all(not(feature = "no-timeout"), ENABLE_TIMEOUT_DETECTION)
+))]
 use gloo_timers::future::TimeoutFuture;
 
-// --- C Shim Functions (kept as-is for WASM compatibility) ---
-// [Previous C shim functions remain unchanged - truncated for brevity]
+// ============================================================================
+// C SHIM FUNCTIONS (unchanged)
+// ============================================================================
 
 #[no_mangle]
 unsafe extern "C" fn malloc(size: ::std::os::raw::c_ulong) -> *mut ::std::os::raw::c_void {
@@ -150,9 +171,10 @@ const PLACEHOLDER: &str = indoc!("
     person food: stir
 ");
 
-// --- Application Logic Starts Here ---
+// ============================================================================
+// FEATURE-SPECIFIC DATA STRUCTURES
+// ============================================================================
 
-// Application Status Enum
 #[derive(Clone, PartialEq)]
 pub enum AppStatus {
     Ready,
@@ -161,12 +183,11 @@ pub enum AppStatus {
     Error(String),
 }
 
-// Testing Configuration
 #[derive(Clone)]
 pub struct TestConfig {
-    pub simulate_slow: bool,      // Add artificial delay
-    pub simulate_lockup: bool,    // Simulate infinite loop
-    pub delay_ms: u32,            // Delay duration in milliseconds
+    pub simulate_slow: bool,
+    pub simulate_lockup: bool,
+    pub delay_ms: u32,
 }
 
 impl Default for TestConfig {
@@ -174,107 +195,174 @@ impl Default for TestConfig {
         TestConfig {
             simulate_slow: false,
             simulate_lockup: false,
-            delay_ms: 2000,  // 2 second default delay
+            delay_ms: 2000,
         }
     }
 }
 
-// History entry for undo functionality
 #[derive(Clone)]
 pub struct HistoryEntry {
     pub model: String,
     pub drawing: Drawing,
 }
 
+// ============================================================================
+// MAIN APPLICATION
+// ============================================================================
+
 pub struct AppProps {}
 
 pub fn app(cx: Scope<AppProps>) -> Element {
 
-    // 1. State Management
+    // Core state (always present)
     let model = use_state(&cx, || String::from(PLACEHOLDER));
     let drawing = use_state(&cx, || draw(PLACEHOLDER.into()).unwrap());
-    let status = use_state(&cx, || AppStatus::Ready);
-    let test_config = use_state(&cx, || TestConfig::default());
     
-    // History for undo (keep last 10 states)
-    let history = use_state(&cx, || {
-        vec![HistoryEntry {
-            model: String::from(PLACEHOLDER),
-            drawing: draw(PLACEHOLDER.into()).unwrap(),
-        }]
-    });
+    // Feature: Status Tracking
+    let status = if ENABLE_STATUS_TRACKING {
+        Some(use_state(&cx, || AppStatus::Ready))
+    } else {
+        None
+    };
     
-    // Track current position in history
-    let history_index = use_state(&cx, || 0usize);
+    // Feature: Test Controls
+    let test_config = if ENABLE_TEST_CONTROLS {
+        Some(use_state(&cx, || TestConfig::default()))
+    } else {
+        None
+    };
+    
+    // Feature: History/Undo
+    let (history, history_index) = if ENABLE_HISTORY {
+        let hist = use_state(&cx, || {
+            vec![HistoryEntry {
+                model: String::from(PLACEHOLDER),
+                drawing: draw(PLACEHOLDER.into()).unwrap(),
+            }]
+        });
+        let idx = use_state(&cx, || 0usize);
+        (Some(hist), Some(idx))
+    } else {
+        (None, None)
+    };
 
-    // 2. Asynchronous Processing Coroutine with Timeout Detection
+    // Processing coroutine with conditional features
     let drawing_client = use_coroutine(&cx, |mut rx: UnboundedReceiver<String>| {
         to_owned![drawing, status, model, test_config, history, history_index];
         async move {
             while let Some(current_model) = rx.next().await {
-                status.set(AppStatus::Processing);
                 
-                let config = test_config.get().clone();
-                
-                // Create a timeout future (5 seconds)
-                let timeout = TimeoutFuture::new(5_000);
-                
-                // Process the drawing
-                let process_future = async {
-                    // TEST: Simulate slow processing
-                    if config.simulate_slow {
-                        log::info!("TEST MODE: Simulating slow processing ({}ms delay)", config.delay_ms);
-                        TimeoutFuture::new(config.delay_ms).await;
+                // Set processing status if enabled
+                if ENABLE_STATUS_TRACKING {
+                    if let Some(ref status) = status {
+                        status.set(AppStatus::Processing);
                     }
-                    
-                    // TEST: Simulate lockup/infinite loop
-                    if config.simulate_lockup {
-                        log::warn!("TEST MODE: Simulating lockup - this will timeout!");
-                        // Create a future that never completes
-                        loop {
-                            TimeoutFuture::new(100).await;
+                }
+                
+                // Get test config if enabled
+                let config = if ENABLE_TEST_CONTROLS {
+                    test_config.as_ref().map(|tc| tc.get().clone())
+                } else {
+                    None
+                };
+                
+                // Process with or without timeout
+                let result = if ENABLE_TIMEOUT_DETECTION {
+                    #[cfg(any(
+                        all(feature = "timeout", not(feature = "no-timeout")),
+                        all(not(feature = "no-timeout"), ENABLE_TIMEOUT_DETECTION)
+                    ))]
+                    {
+                        let timeout = TimeoutFuture::new(5_000);
+                        
+                        let process_future = async {
+                            // Test mode: simulate slow processing
+                            if let Some(ref cfg) = config {
+                                if cfg.simulate_slow {
+                                    log::info!("TEST MODE: Simulating slow processing ({}ms)", cfg.delay_ms);
+                                    TimeoutFuture::new(cfg.delay_ms).await;
+                                }
+                                
+                                if cfg.simulate_lockup {
+                                    log::warn!("TEST MODE: Simulating lockup");
+                                    loop {
+                                        TimeoutFuture::new(100).await;
+                                    }
+                                }
+                            }
+                            
+                            if current_model.trim().is_empty() {
+                                Ok(Ok(Drawing::default()))
+                            } else {
+                                catch_unwind(|| draw(current_model.clone()))
+                            }
+                        };
+                        
+                        futures::select! {
+                            nodes = process_future.fuse() => Some(nodes),
+                            _ = timeout.fuse() => None,
                         }
                     }
                     
-                    // Normal processing
-                    if current_model.trim().is_empty() {
+                    #[cfg(not(any(
+                        all(feature = "timeout", not(feature = "no-timeout")),
+                        all(not(feature = "no-timeout"), ENABLE_TIMEOUT_DETECTION)
+                    )))]
+                    {
+                        // Fallback if timeout feature not available
+                        let nodes = if current_model.trim().is_empty() {
+                            Ok(Ok(Drawing::default()))
+                        } else {
+                            catch_unwind(|| draw(current_model.clone()))
+                        };
+                        Some(nodes)
+                    }
+                } else {
+                    // No timeout - process directly
+                    let nodes = if current_model.trim().is_empty() {
                         Ok(Ok(Drawing::default()))
                     } else {
-                        catch_unwind(|| {
-                            draw(current_model.clone())
-                        })
-                    }
+                        catch_unwind(|| draw(current_model.clone()))
+                    };
+                    Some(nodes)
                 };
                 
-                // Race between processing and timeout
-                let result = futures::select! {
-                    nodes = process_future.fuse() => Some(nodes),
-                    _ = timeout.fuse() => None,
-                };
-                
+                // Handle result
                 match result {
                     Some(nodes) => {
-                        // Processing completed before timeout
                         match nodes {
                             Ok(Ok(drawing_nodes)) => {
                                 drawing.set(drawing_nodes.clone());
-                                status.set(AppStatus::Ready);
                                 
-                                // Add to history (limit to 10 entries)
-                                let mut hist = history.get().clone();
-                                hist.push(HistoryEntry {
-                                    model: current_model.clone(),
-                                    drawing: drawing_nodes,
-                                });
-                                if hist.len() > 10 {
-                                    hist.remove(0);
+                                if ENABLE_STATUS_TRACKING {
+                                    if let Some(ref status) = status {
+                                        status.set(AppStatus::Ready);
+                                    }
                                 }
-                                history.set(hist.clone());
-                                history_index.set(hist.len() - 1);
+                                
+                                // Add to history if enabled
+                                if ENABLE_HISTORY {
+                                    if let (Some(ref hist), Some(ref hist_idx)) = (&history, &history_index) {
+                                        let mut h = hist.get().clone();
+                                        h.push(HistoryEntry {
+                                            model: current_model.clone(),
+                                            drawing: drawing_nodes,
+                                        });
+                                        if h.len() > 10 {
+                                            h.remove(0);
+                                        }
+                                        hist.set(h.clone());
+                                        hist_idx.set(h.len() - 1);
+                                    }
+                                }
                             },
                             Ok(Err(draw_err)) => {
-                                let error_msg = format!("Diagram compilation error: {:?}", draw_err);
-                                status.set(AppStatus::Error(error_msg));
+                                if ENABLE_STATUS_TRACKING {
+                                    if let Some(ref status) = status {
+                                        let error_msg = format!("Diagram compilation error: {:?}", draw_err);
+                                        status.set(AppStatus::Error(error_msg));
+                                    }
+                                }
                             },
                             Err(panic_err) => {
                                 let panic_info = if let Some(s) = panic_err.downcast_ref::<&'static str>() {
@@ -282,132 +370,155 @@ pub fn app(cx: Scope<AppProps>) -> Element {
                                 } else if let Some(s) = panic_err.downcast_ref::<String>() {
                                     s.clone()
                                 } else {
-                                    "Unknown panic payload".to_string()
+                                    "Unknown panic".to_string()
                                 };
-                                let error_msg = format!("Internal Panic: {}", panic_info);
-                                log::error!("{}", error_msg);
-                                status.set(AppStatus::Error(error_msg));
+                                log::error!("Panic: {}", panic_info);
+                                
+                                if ENABLE_STATUS_TRACKING {
+                                    if let Some(ref status) = status {
+                                        status.set(AppStatus::Error(format!("Internal Panic: {}", panic_info)));
+                                    }
+                                }
                             },
                         }
                     },
                     None => {
                         // Timeout occurred
-                        log::error!("Processing timeout after 5 seconds!");
-                        status.set(AppStatus::Timeout);
+                        log::error!("Processing timeout!");
+                        if ENABLE_STATUS_TRACKING {
+                            if let Some(ref status) = status {
+                                status.set(AppStatus::Timeout);
+                            }
+                        }
                     }
                 }
             }
         }
     });
 
-    // 3. Dynamic UI Elements
-    
-    let status_label = match status.get() {
-        AppStatus::Ready => "Enter your model below:",
-        AppStatus::Processing => "Processing...",
-        AppStatus::Timeout => "TIMEOUT: Processing took too long - use Undo to recover",
-        AppStatus::Error(_) => "ERROR: Check your syntax or use Undo to recover",
-    };
-    
-    let label_style = match status.get() {
-        AppStatus::Error(_) | AppStatus::Timeout => "color: red; font-weight: bold;",
-        AppStatus::Processing => "color: orange; font-weight: bold;",
-        _ => "color: black;",
-    };
-    
+    // UI rendering
     let nodes = render(cx, drawing.get().clone());
     let viewbox_width = drawing.viewbox_width;
     let data_svg = as_data_svg(drawing.get().clone(), true);
     let syntax_guide = depict::graph_drawing::frontend::dioxus::syntax_guide(cx)?;
     
-    // Check if undo is available
-    let can_undo = *history_index.get() > 0;
-    let can_redo = *history_index.get() < history.get().len() - 1;
+    // Determine status label and style
+    let (status_label, label_style) = if ENABLE_STATUS_TRACKING {
+        if let Some(ref status) = status {
+            match status.get() {
+                AppStatus::Ready => ("Enter your model below:", "color: black;"),
+                AppStatus::Processing => ("Processing...", "color: orange; font-weight: bold;"),
+                AppStatus::Timeout => ("TIMEOUT: Processing took too long", "color: red; font-weight: bold;"),
+                AppStatus::Error(_) => ("ERROR: Check your syntax", "color: red; font-weight: bold;"),
+            }
+        } else {
+            ("Enter your model below:", "color: black;")
+        }
+    } else {
+        ("Enter your model below:", "color: black;")
+    };
+    
+    // Check undo/redo availability
+    let (can_undo, can_redo) = if ENABLE_HISTORY {
+        if let (Some(ref hist), Some(ref hist_idx)) = (&history, &history_index) {
+            let idx = *hist_idx.get();
+            (idx > 0, idx < hist.get().len() - 1)
+        } else {
+            (false, false)
+        }
+    } else {
+        (false, false)
+    };
 
-    // 4. Component Render
     cx.render(rsx!{
         div {
             class: "main_editor",
             div {
-                // Status Label
-                div {
-                    style: "{label_style}",
-                    status_label
-                }
-                
-                // Test Controls Section
-                div {
-                    style: "padding: 10px; background-color: #f0f0f0; border: 1px solid #ccc; margin-bottom: 10px;",
-                    details {
-                        summary {
-                            style: "font-weight: bold; cursor: pointer;",
-                            "🧪 Test Controls (for debugging)"
-                        }
+                // Status Label (if enabled)
+                if ENABLE_STATUS_TRACKING {
+                    rsx! {
                         div {
-                            style: "padding: 10px;",
-                            
-                            // Slow Processing Toggle
+                            style: "{label_style}",
+                            status_label
+                        }
+                    }
+                }
+                
+                // Test Controls (if enabled)
+                if ENABLE_TEST_CONTROLS {
+                    if let Some(ref tc) = test_config {
+                        rsx! {
                             div {
-                                style: "margin-bottom: 5px;",
-                                label {
-                                    input {
-                                        r#type: "checkbox",
-                                        checked: "{test_config.simulate_slow}",
-                                        onchange: move |e| {
-                                            let mut config = test_config.get().clone();
-                                            config.simulate_slow = e.value.parse().unwrap_or(false);
-                                            test_config.set(config);
-                                        }
+                                style: "padding: 10px; background-color: #f0f0f0; border: 1px solid #ccc; margin-bottom: 10px;",
+                                details {
+                                    summary {
+                                        style: "font-weight: bold; cursor: pointer;",
+                                        "🧪 Test Controls"
                                     }
-                                    " Simulate Slow Processing ({test_config.delay_ms}ms delay)"
-                                }
-                            }
-                            
-                            // Delay Slider
-                            div {
-                                style: "margin-bottom: 5px; margin-left: 20px;",
-                                label {
-                                    "Delay (ms): "
-                                    input {
-                                        r#type: "range",
-                                        min: "500",
-                                        max: "5000",
-                                        step: "500",
-                                        value: "{test_config.delay_ms}",
-                                        disabled: "{!test_config.simulate_slow}",
-                                        oninput: move |e| {
-                                            let mut config = test_config.get().clone();
-                                            config.delay_ms = e.value.parse().unwrap_or(2000);
-                                            test_config.set(config);
-                                        }
-                                    }
-                                    " {test_config.delay_ms}ms"
-                                }
-                            }
-                            
-                            // Lockup Toggle
-                            div {
-                                style: "margin-bottom: 5px;",
-                                label {
-                                    input {
-                                        r#type: "checkbox",
-                                        checked: "{test_config.simulate_lockup}",
-                                        onchange: move |e| {
-                                            let mut config = test_config.get().clone();
-                                            config.simulate_lockup = e.value.parse().unwrap_or(false);
-                                            test_config.set(config);
-                                        }
-                                    }
-                                    " Simulate Lockup (will trigger timeout)"
-                                }
-                            }
-                            
-                            // Warning message
-                            if test_config.simulate_slow || test_config.simulate_lockup {
-                                rsx! {
                                     div {
-                                        style: "color: orange; font-style: italic; margin-top: 10px;",
-                                        "⚠️ Test mode active - any text change will trigger the selected simulation"
+                                        style: "padding: 10px;",
+                                        
+                                        div {
+                                            style: "margin-bottom: 5px;",
+                                            label {
+                                                input {
+                                                    r#type: "checkbox",
+                                                    checked: "{tc.simulate_slow}",
+                                                    onchange: move |e| {
+                                                        let mut config = tc.get().clone();
+                                                        config.simulate_slow = e.value.parse().unwrap_or(false);
+                                                        tc.set(config);
+                                                    }
+                                                }
+                                                " Simulate Slow Processing ({tc.delay_ms}ms)"
+                                            }
+                                        }
+                                        
+                                        div {
+                                            style: "margin-bottom: 5px; margin-left: 20px;",
+                                            label {
+                                                "Delay (ms): "
+                                                input {
+                                                    r#type: "range",
+                                                    min: "500",
+                                                    max: "5000",
+                                                    step: "500",
+                                                    value: "{tc.delay_ms}",
+                                                    disabled: "{!tc.simulate_slow}",
+                                                    oninput: move |e| {
+                                                        let mut config = tc.get().clone();
+                                                        config.delay_ms = e.value.parse().unwrap_or(2000);
+                                                        tc.set(config);
+                                                    }
+                                                }
+                                                " {tc.delay_ms}ms"
+                                            }
+                                        }
+                                        
+                                        div {
+                                            style: "margin-bottom: 5px;",
+                                            label {
+                                                input {
+                                                    r#type: "checkbox",
+                                                    checked: "{tc.simulate_lockup}",
+                                                    onchange: move |e| {
+                                                        let mut config = tc.get().clone();
+                                                        config.simulate_lockup = e.value.parse().unwrap_or(false);
+                                                        tc.set(config);
+                                                    }
+                                                }
+                                                " Simulate Lockup (triggers timeout)"
+                                            }
+                                        }
+                                        
+                                        if tc.simulate_slow || tc.simulate_lockup {
+                                            rsx! {
+                                                div {
+                                                    style: "color: orange; font-style: italic; margin-top: 10px;",
+                                                    "⚠️ Test mode active"
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -415,42 +526,50 @@ pub fn app(cx: Scope<AppProps>) -> Element {
                     }
                 }
                 
-                // History Controls (Undo/Redo)
-                div {
-                    style: "margin-bottom: 10px; display: flex; gap: 10px;",
-                    button {
-                        disabled: "{!can_undo}",
-                        onclick: move |_| {
-                            if can_undo {
-                                let new_index = history_index.get().saturating_sub(1);
-                                history_index.set(new_index);
-                                let entry = &history.get()[new_index];
-                                model.set(entry.model.clone());
-                                drawing.set(entry.drawing.clone());
-                                status.set(AppStatus::Ready);
-                                log::info!("Undo to history index {}", new_index);
+                // History Controls (if enabled)
+                if ENABLE_HISTORY {
+                    if let (Some(ref hist), Some(ref hist_idx)) = (&history, &history_index) {
+                        rsx! {
+                            div {
+                                style: "margin-bottom: 10px; display: flex; gap: 10px;",
+                                button {
+                                    disabled: "{!can_undo}",
+                                    onclick: move |_| {
+                                        if can_undo {
+                                            let new_index = hist_idx.get().saturating_sub(1);
+                                            hist_idx.set(new_index);
+                                            let entry = &hist.get()[new_index];
+                                            model.set(entry.model.clone());
+                                            drawing.set(entry.drawing.clone());
+                                            if let Some(ref status) = status {
+                                                status.set(AppStatus::Ready);
+                                            }
+                                        }
+                                    },
+                                    "⬅️ Undo"
+                                }
+                                button {
+                                    disabled: "{!can_redo}",
+                                    onclick: move |_| {
+                                        if can_redo {
+                                            let new_index = *hist_idx.get() + 1;
+                                            hist_idx.set(new_index);
+                                            let entry = &hist.get()[new_index];
+                                            model.set(entry.model.clone());
+                                            drawing.set(entry.drawing.clone());
+                                            if let Some(ref status) = status {
+                                                status.set(AppStatus::Ready);
+                                            }
+                                        }
+                                    },
+                                    "➡️ Redo"
+                                }
+                                span {
+                                    style: "color: #666; font-size: 0.9em; align-self: center;",
+                                    "History: {hist_idx.get() + 1}/{hist.get().len()}"
+                                }
                             }
-                        },
-                        "⬅️ Undo"
-                    }
-                    button {
-                        disabled: "{!can_redo}",
-                        onclick: move |_| {
-                            if can_redo {
-                                let new_index = *history_index.get() + 1;
-                                history_index.set(new_index);
-                                let entry = &history.get()[new_index];
-                                model.set(entry.model.clone());
-                                drawing.set(entry.drawing.clone());
-                                status.set(AppStatus::Ready);
-                                log::info!("Redo to history index {}", new_index);
-                            }
-                        },
-                        "➡️ Redo"
-                    }
-                    span {
-                        style: "color: #666; font-size: 0.9em; align-self: center;",
-                        "History: {history_index.get() + 1}/{history.get().len()}"
+                        }
                     }
                 }
                 
@@ -472,7 +591,7 @@ pub fn app(cx: Scope<AppProps>) -> Element {
                     }
                 }
                 
-                // Footer with syntax guide and tools
+                // Footer
                 div {
                     style: "display: flex; flex-direction: row; justify-content: space-between;",
                     syntax_guide,
