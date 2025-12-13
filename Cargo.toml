@@ -12,7 +12,9 @@ repository = "https://github.com/mstone/depict"
 
 [features]
 default = ["osqp-rust"]
-desktop = ["interprocess/tokio_support"]
+osqp-rust = ["dep:osqp-rust", "dep:osqp"]
+osqp = ["dep:osqp"]
+desktop = ["interprocess/tokio_support", "serde", "serde/derive"]
 server = ["petgraph/serde-1", "serde", "serde/derive", "serde_json"]
 client = ["petgraph/serde-1", "serde", "serde/derive", "serde_json"]
 
@@ -39,17 +41,24 @@ svg = "0.10"
 thiserror = "1.0"
 typed-index-collections = "3.0"
 
+serde = { version = "1", optional = true, features = ["derive"] }
+serde_json = { version = "1", optional = true }
+
+
+# Non-WASM targets (desktop, server)
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+osqp = { version = "0.6", optional = true }
+
+# WASM targets
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 gloo-timers = "0.3"
 
+# osqp-rust: Custom fork with WASM-compatible bindings that don't require
+# native C compilation via cmake/clang. The standard osqp crate uses osqp-sys
+# which attempts to compile C code and fails for WASM targets.
 
-# osqp
-osqp = { version = "0.6", optional = true }
-osqp-rust = { version = "0.6", git = "https://github.com/mstone/osqp.rs" }
+osqp-rust = { version = "0.6", optional = true, git = "https://github.com/mstone/osqp.rs" }
 
-# server
-serde = { version = "1", optional = true }
-serde_json = { version = "1", optional = true }
 
 # client
 [target.'cfg(all(target_arch = "wasm32", target_os="unknown", target_vendor="unknown"))'.dependencies]

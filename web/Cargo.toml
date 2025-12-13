@@ -10,7 +10,7 @@ repository = "https://github.com/mstone/depict"
 
 [dependencies]
 console_error_panic_hook = "0.1"
-depict = { path = "..", version = "0.3", default-features = false, features = [ "client", "dioxus", "osqp-rust" ] }
+depict = { path = "..", version = "0.3", features = [ "client", "dioxus", "osqp-rust" ] }
 dioxus = { version = "0.3" }
 dioxus-web = { version = "0.3" }
 futures = "0.3"
@@ -28,3 +28,5 @@ tracing = "0.1"
 wasm-bindgen = { version = "0.2", features = [ "serde-serialize" ] }
 wasm-logger = "0.2.0"
 web-sys = { version = "0.3.4", features = [ "Window", "Performance", "PerformanceTiming" ] }
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+gloo-timers = { version = "0.3", features = ["futures"] }
