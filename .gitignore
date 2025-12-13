@@ -5,3 +5,6 @@ target/
 diagnostics/
 build_output/
 test_results/
+build_*/
+web/dist/
+target/
