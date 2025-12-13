@@ -77,8 +77,11 @@ echo "✓ Server built"
 echo ""
 
 # Step 5: Build web WASM
+
 echo "5. Building web WASM..."
-cargo build $RELEASE_FLAG -p depict-web --target wasm32-unknown-unknown --features osqp-rust
+
+# build the web package
+cargo build $RELEASE_FLAG -p depict-web --target wasm32-unknown-unknown
 echo "✓ Web WASM built"
 echo ""
 
