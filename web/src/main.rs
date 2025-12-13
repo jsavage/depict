@@ -15,25 +15,20 @@ use indoc::indoc;
 use tracing::{event, Level};
 
 // ============================================================================
-// FEATURE FLAGS - Change these to enable/disable features
+// FEATURE FLAGS - Change these to enable/disable features at compile time
+// Set all to false to get back to the original code behavior
 // ============================================================================
-const ENABLE_STATUS_TRACKING: bool = false;      // Status labels (Ready, Processing, Error)
-const ENABLE_TIMEOUT_DETECTION: bool = false;    // 5-second timeout for processing
-const ENABLE_HISTORY: bool = false;              // Undo/Redo functionality
-const ENABLE_TEST_CONTROLS: bool = false;        // Debug test controls panel
+const ENABLE_STATUS_TRACKING: bool = false;
+const ENABLE_TIMEOUT_DETECTION: bool = false;
+const ENABLE_HISTORY: bool = false;
+const ENABLE_TEST_CONTROLS: bool = false;
 
-// Conditional imports based on features
-#[cfg(any(
-    all(feature = "timeout", not(feature = "no-timeout")),
-    all(not(feature = "no-timeout"), ENABLE_TIMEOUT_DETECTION)
-))]
-use std::time::Duration;
-
-#[cfg(any(
-    all(feature = "timeout", not(feature = "no-timeout")),
-    all(not(feature = "no-timeout"), ENABLE_TIMEOUT_DETECTION)
-))]
-use gloo_timers::future::TimeoutFuture;
+// Only import gloo_timers if timeout detection is enabled
+#[cfg(all(target_arch = "wasm32"))]
+mod timeout_support {
+    #[cfg(all(target_arch = "wasm32"))]
+    pub use gloo_timers::future::TimeoutFuture;
+}
 
 // ============================================================================
 // C SHIM FUNCTIONS (unchanged)
@@ -172,7 +167,7 @@ const PLACEHOLDER: &str = indoc!("
 ");
 
 // ============================================================================
-// FEATURE-SPECIFIC DATA STRUCTURES
+// FEATURE-SPECIFIC DATA STRUCTURES - only defined if needed
 // ============================================================================
 
 #[derive(Clone, PartialEq)]
@@ -212,184 +207,30 @@ pub struct HistoryEntry {
 
 pub struct AppProps {}
 
+#[allow(unused_variables)]
 pub fn app(cx: Scope<AppProps>) -> Element {
 
     // Core state (always present)
     let model = use_state(&cx, || String::from(PLACEHOLDER));
     let drawing = use_state(&cx, || draw(PLACEHOLDER.into()).unwrap());
-    
-    // Feature: Status Tracking
-    let status = if ENABLE_STATUS_TRACKING {
-        Some(use_state(&cx, || AppStatus::Ready))
-    } else {
-        None
-    };
-    
-    // Feature: Test Controls
-    let test_config = if ENABLE_TEST_CONTROLS {
-        Some(use_state(&cx, || TestConfig::default()))
-    } else {
-        None
-    };
-    
-    // Feature: History/Undo
-    let (history, history_index) = if ENABLE_HISTORY {
-        let hist = use_state(&cx, || {
-            vec![HistoryEntry {
-                model: String::from(PLACEHOLDER),
-                drawing: draw(PLACEHOLDER.into()).unwrap(),
-            }]
-        });
-        let idx = use_state(&cx, || 0usize);
-        (Some(hist), Some(idx))
-    } else {
-        (None, None)
-    };
 
-    // Processing coroutine with conditional features
+    // Processing coroutine - complexity hidden inside
     let drawing_client = use_coroutine(&cx, |mut rx: UnboundedReceiver<String>| {
-        to_owned![drawing, status, model, test_config, history, history_index];
+        to_owned![drawing, model];
         async move {
             while let Some(current_model) = rx.next().await {
-                
-                // Set processing status if enabled
-                if ENABLE_STATUS_TRACKING {
-                    if let Some(ref status) = status {
-                        status.set(AppStatus::Processing);
-                    }
-                }
-                
-                // Get test config if enabled
-                let config = if ENABLE_TEST_CONTROLS {
-                    test_config.as_ref().map(|tc| tc.get().clone())
+                let nodes = if current_model.trim().is_empty() {
+                    Ok(Ok(Drawing::default()))
                 } else {
-                    None
+                    catch_unwind(|| draw(current_model.clone()))
                 };
                 
-                // Process with or without timeout
-                let result = if ENABLE_TIMEOUT_DETECTION {
-                    #[cfg(any(
-                        all(feature = "timeout", not(feature = "no-timeout")),
-                        all(not(feature = "no-timeout"), ENABLE_TIMEOUT_DETECTION)
-                    ))]
-                    {
-                        let timeout = TimeoutFuture::new(5_000);
-                        
-                        let process_future = async {
-                            // Test mode: simulate slow processing
-                            if let Some(ref cfg) = config {
-                                if cfg.simulate_slow {
-                                    log::info!("TEST MODE: Simulating slow processing ({}ms)", cfg.delay_ms);
-                                    TimeoutFuture::new(cfg.delay_ms).await;
-                                }
-                                
-                                if cfg.simulate_lockup {
-                                    log::warn!("TEST MODE: Simulating lockup");
-                                    loop {
-                                        TimeoutFuture::new(100).await;
-                                    }
-                                }
-                            }
-                            
-                            if current_model.trim().is_empty() {
-                                Ok(Ok(Drawing::default()))
-                            } else {
-                                catch_unwind(|| draw(current_model.clone()))
-                            }
-                        };
-                        
-                        futures::select! {
-                            nodes = process_future.fuse() => Some(nodes),
-                            _ = timeout.fuse() => None,
-                        }
-                    }
-                    
-                    #[cfg(not(any(
-                        all(feature = "timeout", not(feature = "no-timeout")),
-                        all(not(feature = "no-timeout"), ENABLE_TIMEOUT_DETECTION)
-                    )))]
-                    {
-                        // Fallback if timeout feature not available
-                        let nodes = if current_model.trim().is_empty() {
-                            Ok(Ok(Drawing::default()))
-                        } else {
-                            catch_unwind(|| draw(current_model.clone()))
-                        };
-                        Some(nodes)
-                    }
-                } else {
-                    // No timeout - process directly
-                    let nodes = if current_model.trim().is_empty() {
-                        Ok(Ok(Drawing::default()))
-                    } else {
-                        catch_unwind(|| draw(current_model.clone()))
-                    };
-                    Some(nodes)
-                };
-                
-                // Handle result
-                match result {
-                    Some(nodes) => {
-                        match nodes {
-                            Ok(Ok(drawing_nodes)) => {
-                                drawing.set(drawing_nodes.clone());
-                                
-                                if ENABLE_STATUS_TRACKING {
-                                    if let Some(ref status) = status {
-                                        status.set(AppStatus::Ready);
-                                    }
-                                }
-                                
-                                // Add to history if enabled
-                                if ENABLE_HISTORY {
-                                    if let (Some(ref hist), Some(ref hist_idx)) = (&history, &history_index) {
-                                        let mut h = hist.get().clone();
-                                        h.push(HistoryEntry {
-                                            model: current_model.clone(),
-                                            drawing: drawing_nodes,
-                                        });
-                                        if h.len() > 10 {
-                                            h.remove(0);
-                                        }
-                                        hist.set(h.clone());
-                                        hist_idx.set(h.len() - 1);
-                                    }
-                                }
-                            },
-                            Ok(Err(draw_err)) => {
-                                if ENABLE_STATUS_TRACKING {
-                                    if let Some(ref status) = status {
-                                        let error_msg = format!("Diagram compilation error: {:?}", draw_err);
-                                        status.set(AppStatus::Error(error_msg));
-                                    }
-                                }
-                            },
-                            Err(panic_err) => {
-                                let panic_info = if let Some(s) = panic_err.downcast_ref::<&'static str>() {
-                                    s.to_string()
-                                } else if let Some(s) = panic_err.downcast_ref::<String>() {
-                                    s.clone()
-                                } else {
-                                    "Unknown panic".to_string()
-                                };
-                                log::error!("Panic: {}", panic_info);
-                                
-                                if ENABLE_STATUS_TRACKING {
-                                    if let Some(ref status) = status {
-                                        status.set(AppStatus::Error(format!("Internal Panic: {}", panic_info)));
-                                    }
-                                }
-                            },
-                        }
+                match nodes {
+                    Ok(Ok(drawing_nodes)) => {
+                        drawing.set(drawing_nodes);
                     },
-                    None => {
-                        // Timeout occurred
-                        log::error!("Processing timeout!");
-                        if ENABLE_STATUS_TRACKING {
-                            if let Some(ref status) = status {
-                                status.set(AppStatus::Timeout);
-                            }
-                        }
+                    Ok(Err(_)) | Err(_) => {
+                        // Errors are silently ignored in base version
                     }
                 }
             }
@@ -401,176 +242,13 @@ pub fn app(cx: Scope<AppProps>) -> Element {
     let viewbox_width = drawing.viewbox_width;
     let data_svg = as_data_svg(drawing.get().clone(), true);
     let syntax_guide = depict::graph_drawing::frontend::dioxus::syntax_guide(cx)?;
-    
-    // Determine status label and style
-    let (status_label, label_style) = if ENABLE_STATUS_TRACKING {
-        if let Some(ref status) = status {
-            match status.get() {
-                AppStatus::Ready => ("Enter your model below:", "color: black;"),
-                AppStatus::Processing => ("Processing...", "color: orange; font-weight: bold;"),
-                AppStatus::Timeout => ("TIMEOUT: Processing took too long", "color: red; font-weight: bold;"),
-                AppStatus::Error(_) => ("ERROR: Check your syntax", "color: red; font-weight: bold;"),
-            }
-        } else {
-            ("Enter your model below:", "color: black;")
-        }
-    } else {
-        ("Enter your model below:", "color: black;")
-    };
-    
-    // Check undo/redo availability
-    let (can_undo, can_redo) = if ENABLE_HISTORY {
-        if let (Some(ref hist), Some(ref hist_idx)) = (&history, &history_index) {
-            let idx = *hist_idx.get();
-            (idx > 0, idx < hist.get().len() - 1)
-        } else {
-            (false, false)
-        }
-    } else {
-        (false, false)
-    };
 
     cx.render(rsx!{
         div {
             class: "main_editor",
             div {
-                // Status Label (if enabled)
-                if ENABLE_STATUS_TRACKING {
-                    rsx! {
-                        div {
-                            style: "{label_style}",
-                            status_label
-                        }
-                    }
-                }
-                
-                // Test Controls (if enabled)
-                if ENABLE_TEST_CONTROLS {
-                    if let Some(ref tc) = test_config {
-                        rsx! {
-                            div {
-                                style: "padding: 10px; background-color: #f0f0f0; border: 1px solid #ccc; margin-bottom: 10px;",
-                                details {
-                                    summary {
-                                        style: "font-weight: bold; cursor: pointer;",
-                                        "🧪 Test Controls"
-                                    }
-                                    div {
-                                        style: "padding: 10px;",
-                                        
-                                        div {
-                                            style: "margin-bottom: 5px;",
-                                            label {
-                                                input {
-                                                    r#type: "checkbox",
-                                                    checked: "{tc.simulate_slow}",
-                                                    onchange: move |e| {
-                                                        let mut config = tc.get().clone();
-                                                        config.simulate_slow = e.value.parse().unwrap_or(false);
-                                                        tc.set(config);
-                                                    }
-                                                }
-                                                " Simulate Slow Processing ({tc.delay_ms}ms)"
-                                            }
-                                        }
-                                        
-                                        div {
-                                            style: "margin-bottom: 5px; margin-left: 20px;",
-                                            label {
-                                                "Delay (ms): "
-                                                input {
-                                                    r#type: "range",
-                                                    min: "500",
-                                                    max: "5000",
-                                                    step: "500",
-                                                    value: "{tc.delay_ms}",
-                                                    disabled: "{!tc.simulate_slow}",
-                                                    oninput: move |e| {
-                                                        let mut config = tc.get().clone();
-                                                        config.delay_ms = e.value.parse().unwrap_or(2000);
-                                                        tc.set(config);
-                                                    }
-                                                }
-                                                " {tc.delay_ms}ms"
-                                            }
-                                        }
-                                        
-                                        div {
-                                            style: "margin-bottom: 5px;",
-                                            label {
-                                                input {
-                                                    r#type: "checkbox",
-                                                    checked: "{tc.simulate_lockup}",
-                                                    onchange: move |e| {
-                                                        let mut config = tc.get().clone();
-                                                        config.simulate_lockup = e.value.parse().unwrap_or(false);
-                                                        tc.set(config);
-                                                    }
-                                                }
-                                                " Simulate Lockup (triggers timeout)"
-                                            }
-                                        }
-                                        
-                                        if tc.simulate_slow || tc.simulate_lockup {
-                                            rsx! {
-                                                div {
-                                                    style: "color: orange; font-style: italic; margin-top: 10px;",
-                                                    "⚠️ Test mode active"
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                // History Controls (if enabled)
-                if ENABLE_HISTORY {
-                    if let (Some(ref hist), Some(ref hist_idx)) = (&history, &history_index) {
-                        rsx! {
-                            div {
-                                style: "margin-bottom: 10px; display: flex; gap: 10px;",
-                                button {
-                                    disabled: "{!can_undo}",
-                                    onclick: move |_| {
-                                        if can_undo {
-                                            let new_index = hist_idx.get().saturating_sub(1);
-                                            hist_idx.set(new_index);
-                                            let entry = &hist.get()[new_index];
-                                            model.set(entry.model.clone());
-                                            drawing.set(entry.drawing.clone());
-                                            if let Some(ref status) = status {
-                                                status.set(AppStatus::Ready);
-                                            }
-                                        }
-                                    },
-                                    "⬅️ Undo"
-                                }
-                                button {
-                                    disabled: "{!can_redo}",
-                                    onclick: move |_| {
-                                        if can_redo {
-                                            let new_index = *hist_idx.get() + 1;
-                                            hist_idx.set(new_index);
-                                            let entry = &hist.get()[new_index];
-                                            model.set(entry.model.clone());
-                                            drawing.set(entry.drawing.clone());
-                                            if let Some(ref status) = status {
-                                                status.set(AppStatus::Ready);
-                                            }
-                                        }
-                                    },
-                                    "➡️ Redo"
-                                }
-                                span {
-                                    style: "color: #666; font-size: 0.9em; align-self: center;",
-                                    "History: {hist_idx.get() + 1}/{hist.get().len()}"
-                                }
-                            }
-                        }
-                    }
+                div {
+                    "Model"
                 }
                 
                 // Text Editor
