@@ -1,0 +1,41 @@
+=== Inside Docker Container ===
+Rust version: rustc 1.85.0-nightly (d10a6823f 2024-11-29)
+Cargo version: cargo 1.85.0-nightly (4c39aaff6 2024-11-25)
+Trunk version: trunk 0.21.4
+Build started: Fri Dec 12 22:58:28 UTC 2025
+
+=== Depict Build Script ===
+Started at: Fri Dec 12 22:58:28 UTC 2025
+
+1. Verifying Rust toolchain...
+================================================
+rustc 1.85.0-nightly (d10a6823f 2024-11-29)
+cargo 1.85.0-nightly (4c39aaff6 2024-11-25)
+trunk 0.21.4
+wasm-bindgen 0.2.95
+Build host: Linux acf216c536d2 6.8.0-88-generic #89-Ubuntu SMP PREEMPT_DYNAMIC Sat Oct 11 01:02:46 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
+Date: Fri Dec 12 22:58:28 UTC 2025
+================================================
+
+2. Applying code fixes...
+✓ Fixed server/src/main.rs line 70
+✓ Fixed Inflector case in server/Cargo.toml
+✓ Verified workspace members
+
+3. Building desktop application...
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /workspace/dioxus/Cargo.toml
+workspace: /workspace/Cargo.toml
+    Updating crates.io index
+    Updating git repository `https://github.com/mstone/osqp.rs`
+    Updating git submodule `https://github.com/oxfordcontrol/osqp.git`
+    Updating git submodule `https://github.com/oxfordcontrol/qdldl.git`
+error: failed to select a version for `depict`.
+    ... required by package `depict-desktop v0.3.0 (/workspace/dioxus)`
+versions that meet the requirements `^0.3` (locked to 0.3.0) are: 0.3.0
+
+the package `depict-desktop` depends on `depict`, with features: `osqp` but `depict` does not have these features.
+ It has an optional dependency with that name, but that dependency uses the "dep:" syntax in the features table, so it does not have an implicit feature with that name.
+
+
+failed to select a version for `depict` which could resolve this conflict

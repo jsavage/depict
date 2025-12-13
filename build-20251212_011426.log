@@ -1,0 +1,22 @@
+=== Inside Docker Container ===
+Rust version: rustc 1.85.0-nightly (d10a6823f 2024-11-29)
+Cargo version: cargo 1.85.0-nightly (4c39aaff6 2024-11-25)
+Trunk version: trunk 0.21.4
+Build started: Fri Dec 12 01:14:29 UTC 2025
+
+=== Building Depict ===
+Fri Dec 12 01:14:29 UTC 2025
+Build directory: build_output/20251212_011429
+=== Building Desktop ===
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /workspace/dioxus/Cargo.toml
+workspace: /workspace/Cargo.toml
+    Updating crates.io index
+    Updating git repository `https://github.com/mstone/osqp.rs`
+    Updating git submodule `https://github.com/oxfordcontrol/osqp.git`
+    Updating git submodule `https://github.com/oxfordcontrol/qdldl.git`
+error: no matching package found
+searched package name: `inflector`
+perhaps you meant:      Inflector
+location searched: crates.io index
+required by package `depict-server v0.3.0 (/workspace/server)`

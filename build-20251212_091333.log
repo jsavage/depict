@@ -1,0 +1,410 @@
+=== Inside Docker Container ===
+Rust version: rustc 1.85.0-nightly (d10a6823f 2024-11-29)
+Cargo version: cargo 1.85.0-nightly (4c39aaff6 2024-11-25)
+Trunk version: trunk 0.21.4
+Build started: Fri Dec 12 09:13:34 UTC 2025
+
+=== Depict Build Script ===
+Started at: Fri Dec 12 09:13:34 UTC 2025
+
+1. Verifying Rust toolchain...
+================================================
+rustc 1.85.0-nightly (d10a6823f 2024-11-29)
+cargo 1.85.0-nightly (4c39aaff6 2024-11-25)
+trunk 0.21.4
+wasm-bindgen 0.2.95
+Build host: Linux 3cd8d813cc1c 6.8.0-88-generic #89-Ubuntu SMP PREEMPT_DYNAMIC Sat Oct 11 01:02:46 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
+Date: Fri Dec 12 09:13:34 UTC 2025
+================================================
+
+2. Applying code fixes...
+✓ Fixed server/src/main.rs line 70
+✓ Fixed Inflector case in server/Cargo.toml
+✓ Verified workspace members
+
+3. Building desktop application...
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /workspace/dioxus/Cargo.toml
+workspace: /workspace/Cargo.toml
+    Updating crates.io index
+    Updating git repository `https://github.com/mstone/osqp.rs`
+    Updating git submodule `https://github.com/oxfordcontrol/osqp.git`
+    Updating git submodule `https://github.com/oxfordcontrol/qdldl.git`
+ Downloading crates ...
+  Downloaded ahash v0.8.12
+  Downloaded adler2 v2.0.1
+  Downloaded anyhow v1.0.100
+  Downloaded async-channel v2.5.0
+  Downloaded yoke-derive v0.8.1
+  Downloaded async-trait v0.1.89
+  Downloaded async-task v4.7.1
+  Downloaded execute-command-macro v0.1.11
+  Downloaded execute v0.2.15
+  Downloaded writeable v0.6.2
+  Downloaded yoke v0.8.1
+  Downloaded ident_case v1.0.1
+  Downloaded execute-command-tokens v0.1.9
+  Downloaded equivalent v1.0.2
+  Downloaded bumpslab v0.2.0
+  Downloaded include_dir_macros v0.7.4
+  Downloaded zerofrom v0.1.6
+  Downloaded instant v0.1.13
+  Downloaded execute-command-macro-impl v0.1.12
+  Downloaded gtk3-macros v0.15.6
+  Downloaded darling_macro v0.21.3
+  Downloaded enum-kinds v0.5.1
+  Downloaded intmap v0.7.1
+  Downloaded include_dir v0.7.4
+  Downloaded gdkx11-sys v0.15.1
+  Downloaded dioxus-hot-reload v0.1.1
+  Downloaded filetime v0.2.26
+  Downloaded beef v0.5.2
+  Downloaded enumset_derive v0.14.0
+  Downloaded concurrent-queue v2.5.0
+  Downloaded cairo-sys-rs v0.15.1
+  Downloaded dioxus-hooks v0.3.1
+  Downloaded event-listener-strategy v0.5.4
+  Downloaded dioxus-core-macro v0.3.0
+  Downloaded proc-macro-error-attr v1.0.4
+  Downloaded idna_adapter v1.2.1
+  Downloaded heck v0.4.1
+  Downloaded gdk-pixbuf v0.15.11
+  Downloaded gobject-sys v0.15.10
+  Downloaded fixedbitset v0.4.2
+  Downloaded dioxus-rsx v0.0.3
+  Downloaded dioxus-rsx v0.0.2
+  Downloaded self_cell v0.10.3
+  Downloaded home v0.5.5
+  Downloaded fastrand v2.3.0
+  Downloaded factorial v0.4.0
+  Downloaded heck v0.3.3
+  Downloaded version-compare v0.2.1
+  Downloaded gdk-pixbuf-sys v0.15.10
+  Downloaded form_urlencoded v1.2.2
+  Downloaded cfg-if v1.0.4
+  Downloaded autocfg v1.5.0
+  Downloaded stable_deref_trait v1.2.1
+  Downloaded version-compare v0.0.11
+  Downloaded to_method v1.1.0
+  Downloaded colorous v1.0.16
+  Downloaded blocking v1.6.2
+  Downloaded percent-encoding v2.3.2
+  Downloaded field-offset v0.3.6
+  Downloaded dioxus v0.3.2
+  Downloaded javascriptcore-rs-sys v0.4.0
+  Downloaded atk-sys v0.15.1
+  Downloaded self_cell v1.2.1
+  Downloaded longest-increasing-subsequence v0.1.0
+  Downloaded cfg-expr v0.9.1
+  Downloaded glib-macros v0.15.13
+  Downloaded either v1.15.0
+  Downloaded serde-value v0.7.0
+  Downloaded hamming v0.1.3
+  Downloaded globset v0.4.14
+  Downloaded allocator-api2 v0.2.21
+  Downloaded iana-time-zone v0.1.64
+  Downloaded tokio-macros v2.6.0
+  Downloaded find-msvc-tools v0.1.5
+  Downloaded dioxus-interpreter-js v0.3.3
+  Downloaded generic-array v1.3.5
+  Downloaded infer v0.11.0
+  Downloaded toml_datetime v0.6.11
+  Downloaded event-listener v5.4.1
+  Downloaded indoc v1.0.9
+  Downloaded futures-lite v2.6.1
+  Downloaded zerovec-derive v0.11.2
+  Downloaded crc32fast v1.5.0
+  Downloaded cfg-expr v0.15.8
+  Downloaded enumset v1.1.10
+  Downloaded fdeflate v0.3.7
+  Downloaded atk v0.15.1
+  Downloaded dioxus-html v0.3.1
+  Downloaded icu_provider v2.1.1
+  Downloaded getrandom v0.3.4
+  Downloaded itoa v1.0.15
+  Downloaded crossbeam-utils v0.8.21
+  Downloaded darling v0.21.3
+  Downloaded cairo-rs v0.15.12
+  Downloaded ordered-float v2.10.1
+  Downloaded webbrowser v0.8.15
+  Downloaded logos v0.12.1
+  Downloaded webkit2gtk-sys v0.18.0
+  Downloaded parking v2.2.1
+  Downloaded unicode-ident v1.0.22
+  Downloaded icu_properties v2.1.1
+  Downloaded icu_normalizer v2.1.1
+  Downloaded bincode v2.0.1
+  Downloaded pkg-config v0.3.32
+  Downloaded piper v0.2.4
+  Downloaded memoffset v0.9.1
+  Downloaded ordered-float v3.9.2
+  Downloaded derive_more v0.99.20
+  Downloaded toml v0.5.11
+  Downloaded proc-macro-crate v1.3.1
+  Downloaded icu_normalizer_data v2.1.1
+  Downloaded glib-sys v0.15.10
+  Downloaded icu_collections v2.1.1
+  Downloaded euclid v0.22.11
+  Downloaded darling_core v0.21.3
+  Downloaded flate2 v1.1.5
+  Downloaded bytes v1.11.0
+  Downloaded rustversion v1.0.22
+  Downloaded gdk v0.15.4
+  Downloaded gdk-sys v0.15.1
+  Downloaded spinning v0.1.0
+  Downloaded sorted-vec v0.7.0
+  Downloaded typenum v1.19.0
+  Downloaded svg v0.10.0
+  Downloaded serde_repr v0.1.20
+  Downloaded cfb v0.7.3
+  Downloaded webkit2gtk v0.18.2
+  Downloaded bumpalo v3.19.0
+  Downloaded unty v0.0.4
+  Downloaded crossbeam-channel v0.5.15
+  Downloaded potential_utf v0.1.4
+  Downloaded http v0.2.12
+  Downloaded gio-sys v0.15.10
+  Downloaded url v2.5.7
+  Downloaded cc v1.2.48
+  Downloaded toml_edit v0.19.15
+  Downloaded thread_local v1.1.9
+  Downloaded thiserror v1.0.69
+  Downloaded aho-corasick v1.1.4
+  Downloaded smallbox v0.8.8
+  Downloaded serde_spanned v0.6.9
+  Downloaded primal-estimate v0.3.3
+  Downloaded primal-bit v0.3.2
+  Downloaded dioxus-core v0.3.3
+  Downloaded icu_locale_core v2.1.1
+  Downloaded idna v1.1.0
+  Downloaded winnow v0.5.40
+  Downloaded target-lexicon v0.12.16
+  Downloaded synstructure v0.13.2
+  Downloaded pomelo-impl v0.1.5
+  Downloaded utf8_iter v1.0.4
+  Downloaded icu_properties_data v2.1.1
+  Downloaded dioxus-desktop v0.3.0
+  Downloaded gtk-sys v0.15.3
+  Downloaded lock_api v0.4.14
+  Downloaded javascriptcore-rs v0.16.0
+  Downloaded internment v0.7.5
+  Downloaded chrono v0.4.42
+  Downloaded glib v0.15.12
+  Downloaded litemap v0.8.1
+  Downloaded zerofrom-derive v0.1.6
+  Downloaded gio v0.15.12
+  Downloaded bstr v1.12.1
+  Downloaded pin-project-lite v0.2.16
+  Downloaded logos-derive v0.12.1
+  Downloaded raw-window-handle v0.5.2
+  Downloaded notify v5.2.0
+  Downloaded pango-sys v0.15.10
+  Downloaded once_cell v1.21.3
+  Downloaded gtk v0.15.5
+  Downloaded semver v1.0.27
+  Downloaded quote v1.0.42
+  Downloaded proc-macro-error v1.0.4
+  Downloaded tokio v1.48.0
+  Downloaded system-deps v6.2.2
+  Downloaded system-deps v5.0.0
+  Downloaded slab v0.4.11
+  Downloaded tinystr v0.8.2
+  Downloaded soup2-sys v0.2.0
+  Downloaded thiserror-impl v1.0.69
+  Downloaded keyboard-types v0.6.2
+  Downloaded parking_lot_core v0.9.12
+  Downloaded toml v0.8.23
+  Downloaded pango v0.15.10
+  Downloaded smallvec v1.15.1
+  Downloaded ignore v0.4.20
+  Downloaded ryu v1.0.20
+  Downloaded log v0.4.28
+  Downloaded pomelo v0.1.5
+  Downloaded x11-dl v2.21.0
+  Downloaded x11 v2.21.0
+  Downloaded uuid v1.18.1
+  Downloaded typed-index-collections v3.3.0
+  Downloaded parking_lot v0.12.5
+  Downloaded proc-macro2 v1.0.103
+  Downloaded serde_derive v1.0.228
+  Downloaded soup2 v0.2.1
+  Downloaded socket2 v0.6.1
+  Downloaded serde_core v1.0.228
+  Downloaded primal-sieve v0.3.7
+  Downloaded zerotrie v0.2.3
+  Downloaded miniz_oxide v0.8.9
+  Downloaded indexmap v2.5.0
+  Downloaded toml_edit v0.22.27
+  Downloaded mio v1.1.0
+  Downloaded serde v1.0.228
+  Downloaded memchr v2.7.6
+  Downloaded interprocess v1.2.1
+  Downloaded zerovec v0.11.5
+  Downloaded png v0.17.16
+  Downloaded regex v1.12.2
+  Downloaded winnow v0.7.14
+  Downloaded serde_json v1.0.145
+  Downloaded zerocopy v0.8.31
+  Downloaded syn v2.0.111
+  Downloaded regex-syntax v0.8.8
+  Downloaded regex-automata v0.4.13
+  Downloaded petgraph v0.6.5
+  Downloaded libc v0.2.177
+  Downloaded wry v0.23.4
+  Downloaded tao v0.15.8
+   Compiling depict v0.3.0 (/workspace)
+error[E0432]: unresolved import `osqp_rust`
+   --> src/graph_drawing.rs:138:9
+    |
+138 |     use osqp_rust as osqp;
+    |         ^^^^^^^^^^^^^^^^^ no external crate `osqp_rust`
+
+error[E0432]: unresolved import `osqp_rust`
+    --> src/graph_drawing.rs:1678:9
+     |
+1678 |     use osqp_rust as osqp;
+     |         ^^^^^^^^^^^^^^^^^ no external crate `osqp_rust`
+
+error[E0432]: unresolved import `osqp_rust`
+    --> src/graph_drawing.rs:4134:9
+     |
+4134 |     use osqp_rust as osqp;
+     |         ^^^^^^^^^^^^^^^^^ no external crate `osqp_rust`
+
+warning: unused import: `Model`
+   --> src/lib.rs:464:35
+    |
+464 |         use crate::parser::{Item, Model};
+    |                                   ^^^^^
+    |
+    = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `HashSet`
+   --> src/graph_drawing.rs:332:38
+    |
+332 |     use std::{collections::{HashMap, HashSet}, borrow::{Cow, Borrow}, vec::IntoIter, ops::Deref, slice::Iter};
+    |                                      ^^^^^^^
+
+warning: unused import: `*`
+   --> src/graph_drawing.rs:336:45
+    |
+336 |     use crate::graph_drawing::eval::visit::{*, Visit as VisitVal};
+    |                                             ^
+
+warning: unused import: `petgraph::algo::is_cyclic_directed`
+    --> src/graph_drawing.rs:4140:9
+     |
+4140 |     use petgraph::algo::is_cyclic_directed;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unnecessary trailing semicolon
+    --> src/graph_drawing.rs:6378:116
+     |
+6378 |                 let classes = itertools::join(styling.style_by_name.get(container).iter().copied().flatten(), " ");;
+     |                                                                                                                    ^ help: remove this semicolon
+     |
+     = note: `#[warn(redundant_semicolons)]` on by default
+
+warning: unused import: `Borrow`
+   --> src/graph_drawing.rs:332:62
+    |
+332 |     use std::{collections::{HashMap, HashSet}, borrow::{Cow, Borrow}, vec::IntoIter, ops::Deref, slice::Iter};
+    |                                                              ^^^^^^
+
+warning: unused import: `Visit`
+   --> src/graph_drawing.rs:336:48
+    |
+336 |     use crate::graph_drawing::eval::visit::{*, Visit as VisitVal};
+    |                                                ^^^^^
+
+warning: unused variable: `v`
+   --> src/lib.rs:560:62
+    |
+560 |         pub fn visit_text<'s, 't, V: Visit<'s, 't> + ?Sized>(v: &mut V, text: &'t Cow<'s, str>) {
+    |                                                              ^ help: if this is intentional, prefix it with an underscore: `_v`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `text`
+   --> src/lib.rs:560:73
+    |
+560 |         pub fn visit_text<'s, 't, V: Visit<'s, 't> + ?Sized>(v: &mut V, text: &'t Cow<'s, str>) {
+    |                                                                         ^^^^ help: if this is intentional, prefix it with an underscore: `_text`
+
+warning: unused variable: `style`
+   --> src/graph_drawing.rs:718:51
+    |
+718 |                 Val::Process { name, label, body, style } => {
+    |                                                   ^^^^^ help: try ignoring the field: `style: _`
+
+warning: unused variable: `style`
+   --> src/graph_drawing.rs:748:55
+    |
+748 |                 Val::Chain { name, rel, path, labels, style } => {
+    |                                                       ^^^^^ help: try ignoring the field: `style: _`
+
+warning: unused variable: `n`
+   --> src/graph_drawing.rs:865:17
+    |
+865 |                 n => {
+    |                 ^ help: if this is intentional, prefix it with an underscore: `_n`
+
+warning: unused variable: `n`
+   --> src/graph_drawing.rs:894:17
+    |
+894 |                 n => {
+    |                 ^ help: if this is intentional, prefix it with an underscore: `_n`
+
+warning: unused variable: `body`
+    --> src/graph_drawing.rs:1219:36
+     |
+1219 |                 Val::Style { name, body, .. } => {
+     |                                    ^^^^-
+     |                                    |
+     |                                    help: try removing the field
+
+warning: variable does not need to be mutable
+    --> src/graph_drawing.rs:1311:13
+     |
+1311 |         let mut val2 = val.clone();
+     |             ----^^^^
+     |             |
+     |             help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` on by default
+
+warning: unused variable: `v`
+    --> src/graph_drawing.rs:1439:53
+     |
+1439 |         pub fn visit_label<V, T: Visit<V> + ?Sized>(v: &mut T, label: &V) {
+     |                                                     ^ help: if this is intentional, prefix it with an underscore: `_v`
+
+warning: unused variable: `label`
+    --> src/graph_drawing.rs:1439:64
+     |
+1439 |         pub fn visit_label<V, T: Visit<V> + ?Sized>(v: &mut T, label: &V) {
+     |                                                                ^^^^^ help: if this is intentional, prefix it with an underscore: `_label`
+
+warning: unused variable: `v`
+    --> src/graph_drawing.rs:1460:51
+     |
+1460 |         pub fn visit_rel<V, T: Visit<V> + ?Sized>(v: &mut T, rel: &Rel) {
+     |                                                   ^ help: if this is intentional, prefix it with an underscore: `_v`
+
+warning: unused variable: `rel`
+    --> src/graph_drawing.rs:1460:62
+     |
+1460 |         pub fn visit_rel<V, T: Visit<V> + ?Sized>(v: &mut T, rel: &Rel) {
+     |                                                              ^^^ help: if this is intentional, prefix it with an underscore: `_rel`
+
+warning: variable does not need to be mutable
+    --> src/graph_drawing.rs:5799:17
+     |
+5799 |             let mut val = eval(&items);
+     |                 ----^^^
+     |                 |
+     |                 help: remove this `mut`
+
+For more information about this error, try `rustc --explain E0432`.
+warning: `depict` (lib) generated 20 warnings
+error: could not compile `depict` (lib) due to 3 previous errors; 20 warnings emitted

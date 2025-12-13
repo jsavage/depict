@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./index-597d90855083f957.css" integrity="sha384&#x2D;7GZOiJ7WwbJ2PKz3iZ2Vt&#x2F;NHNz65guUjQZ&#x2F;uo6o2LYkbO&#x2F;Al8pImelhUBJCReJw&#x2B;"/>
+  <link rel="modulepreload" href="./depict-web-d499947baedc2c30.js" crossorigin=anonymous integrity="sha384-uwkq1as74/pRFu5WWMGbT8KFnekuT8kSKomlaJcY3M1AaKPyfkZ/yxTT29BQLYfg"><link rel="modulepreload" href="./snippets/dioxus-web-dad4d7491730f4fe/inline0.js" crossorigin=anonymous integrity="sha384-Dxcv63sNi1i1y3YoU65Oahj/MNKUBEPhWTkbqWXzN9PtLxrFSdv0FtNQFiODlF/F"><link rel="modulepreload" href="./snippets/dioxus-interpreter-js-7853214f69bd9fe6/inline0.js" crossorigin=anonymous integrity="sha384-jnuzn02Ck7Jg8y85cC1vlr1yBCNjzGwOEhgikLU6uTpk2elKD4NiipXQ1aBGs5MW"><link rel="preload" href="./depict-web-d499947baedc2c30_bg.wasm" crossorigin=anonymous integrity="sha384-LPWNTrTl0FgbuSNoXnTfnnKu40wnCwk6WfvuY1DZ/PX5CsLf/3ei//E51YM2sopp" as="fetch" type="application/wasm"></head>
+  <body>
+    <div id="main"> </div>
+  
+<script type="module" nonce="0OZftD9lCxIJgRl4ml3CHQ==">
+import init, * as bindings from './depict-web-d499947baedc2c30.js';
+const wasm = await init({ module_or_path: './depict-web-d499947baedc2c30_bg.wasm' });
+
+
+window.wasmBindings = bindings;
+
+
+dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
+
+</script></body>
+</html>
