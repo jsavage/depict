@@ -167,6 +167,67 @@ const PLACEHOLDER: &str = indoc!("
 ");
 
 // ============================================================================
+// URL PARAMETER HELPER FUNCTION
+// ============================================================================
+
+/// Simple URL decoder that handles the most common URL-encoded characters
+fn decode_url(encoded: &str) -> String {
+    let mut decoded = String::with_capacity(encoded.len());
+    let mut chars = encoded.chars();
+    
+    while let Some(c) = chars.next() {
+        if c == '%' {
+            // Try to decode %XX where XX are hex digits
+            let hex: String = chars.by_ref().take(2).collect();
+            if hex.len() == 2 {
+                if let Ok(byte) = u8::from_str_radix(&hex, 16) {
+                    decoded.push(byte as char);
+                    continue;
+                }
+            }
+            // If decoding fails, just keep the % and hex chars
+            decoded.push('%');
+            decoded.push_str(&hex);
+        } else if c == '+' {
+            // '+' is often used for space in URL encoding
+            decoded.push(' ');
+        } else {
+            decoded.push(c);
+        }
+    }
+    
+    decoded
+}
+
+/// Extracts the 'input' parameter from the URL query string and decodes it.
+/// Returns the decoded string if found, otherwise returns None.
+fn get_url_input_parameter() -> Option<String> {
+    let window = web_sys::window()?;
+    let location = window.location();
+    let search = location.search().ok()?;
+    
+    if search.is_empty() || search == "?" {
+        return None;
+    }
+    
+    // Parse query string manually (simple implementation)
+    // Format: ?input=encoded_value or ?other=value&input=encoded_value
+    let query = search.trim_start_matches('?');
+    
+    for pair in query.split('&') {
+        let mut parts = pair.splitn(2, '=');
+        if let (Some(key), Some(value)) = (parts.next(), parts.next()) {
+            if key == "input" {
+                // URL decode the value
+                return Some(decode_url(value));
+            }
+        }
+    }
+    
+    None
+}
+
+// ============================================================================
 // FEATURE-SPECIFIC DATA STRUCTURES - only defined if needed
 // ============================================================================
 
@@ -210,9 +271,14 @@ pub struct AppProps {}
 #[allow(unused_variables)]
 pub fn app(cx: Scope<AppProps>) -> Element {
 
+    // Determine initial model text: use URL parameter if available, otherwise use placeholder
+    let initial_model = get_url_input_parameter().unwrap_or_else(|| String::from(PLACEHOLDER));
+    
     // Core state (always present)
-    let model = use_state(&cx, || String::from(PLACEHOLDER));
-    let drawing = use_state(&cx, || draw(PLACEHOLDER.into()).unwrap());
+    let model = use_state(&cx, || initial_model.clone());
+    let drawing = use_state(&cx, || {
+        draw(initial_model.clone()).unwrap_or_default()
+    });
 
     // Processing coroutine - complexity hidden inside
     let drawing_client = use_coroutine(&cx, |mut rx: UnboundedReceiver<String>| {
