@@ -21,7 +21,7 @@ use tracing::{event, Level};
 // Set all to false to get back to the original code behavior
 // ============================================================================
 const ENABLE_STATUS_TRACKING: bool = true;
-const ENABLE_TIMEOUT_DETECTION: bool = true;
+const ENABLE_TIMEOUT_DETECTION: bool = false;
 const ENABLE_HISTORY: bool = false;
 const ENABLE_TEST_CONTROLS: bool = false;
 
@@ -308,6 +308,13 @@ pub fn app(cx: Scope<AppProps>) -> Element {
         draw(initial_model.clone()).unwrap_or_default()
     });
     
+    // Status tracking (conditional)
+    let status = if ENABLE_STATUS_TRACKING {
+        Some(use_state(&cx, || AppStatus::Ready))
+    } else {
+        None
+    };
+    
     // Tab state
     let active_tab = use_state(&cx, || Tab::Editor);
     
@@ -344,27 +351,59 @@ pub fn app(cx: Scope<AppProps>) -> Element {
     });
 
     // Processing coroutine - complexity hidden inside
-    let drawing_client = use_coroutine(&cx, |mut rx: UnboundedReceiver<String>| {
-        to_owned![drawing, model];
-        async move {
-            while let Some(current_model) = rx.next().await {
-                let nodes = if current_model.trim().is_empty() {
-                    Ok(Ok(Drawing::default()))
-                } else {
-                    catch_unwind(|| draw(current_model.clone()))
-                };
-                
-                match nodes {
-                    Ok(Ok(drawing_nodes)) => {
-                        drawing.set(drawing_nodes);
-                    },
-                    Ok(Err(_)) | Err(_) => {
-                        // Errors are silently ignored in base version
+    let drawing_client = if ENABLE_STATUS_TRACKING && status.is_some() {
+        let status_state = status.as_ref().unwrap().clone();
+        use_coroutine(&cx, |mut rx: UnboundedReceiver<String>| {
+            to_owned![drawing, status_state];
+            async move {
+                while let Some(current_model) = rx.next().await {
+                    // Update status to Processing
+                    status_state.set(AppStatus::Processing);
+                    
+                    let nodes = if current_model.trim().is_empty() {
+                        Ok(Ok(Drawing::default()))
+                    } else {
+                        catch_unwind(|| draw(current_model.clone()))
+                    };
+                    
+                    match nodes {
+                        Ok(Ok(drawing_nodes)) => {
+                            drawing.set(drawing_nodes);
+                            status_state.set(AppStatus::Ready);
+                        },
+                        Ok(Err(_)) => {
+                            status_state.set(AppStatus::Error("Failed to render diagram".to_string()));
+                        },
+                        Err(_) => {
+                            status_state.set(AppStatus::Error("Rendering panicked".to_string()));
+                        }
                     }
                 }
             }
-        }
-    });
+        })
+    } else {
+        use_coroutine(&cx, |mut rx: UnboundedReceiver<String>| {
+            to_owned![drawing];
+            async move {
+                while let Some(current_model) = rx.next().await {
+                    let nodes = if current_model.trim().is_empty() {
+                        Ok(Ok(Drawing::default()))
+                    } else {
+                        catch_unwind(|| draw(current_model.clone()))
+                    };
+                    
+                    match nodes {
+                        Ok(Ok(drawing_nodes)) => {
+                            drawing.set(drawing_nodes);
+                        },
+                        Ok(Err(_)) | Err(_) => {
+                            // Errors are silently ignored when status tracking is disabled
+                        }
+                    }
+                }
+            }
+        })
+    };
 
     // UI rendering - render nodes for each tab separately
     let viewbox_width = drawing.viewbox_width;
@@ -390,6 +429,18 @@ pub fn app(cx: Scope<AppProps>) -> Element {
     let diagram_tab_bg = if *active_tab.get() == Tab::Diagram { "#fff" } else { "transparent" };
     let diagram_tab_border = if *active_tab.get() == Tab::Diagram { "2px solid #000" } else { "none" };
     let diagram_tab_weight = if *active_tab.get() == Tab::Diagram { "bold" } else { "normal" };
+    
+    // Status indicator text and color
+    let (status_text, status_color) = if ENABLE_STATUS_TRACKING && status.is_some() {
+        match status.as_ref().unwrap().get() {
+            AppStatus::Ready => ("Ready", "#28a745"),
+            AppStatus::Processing => ("Processing...", "#ffc107"),
+            AppStatus::Timeout => ("Timeout", "#dc3545"),
+            AppStatus::Error(ref msg) => (msg.as_str(), "#dc3545"),
+        }
+    } else {
+        ("", "")
+    };
 
     cx.render(rsx!{
         div {
@@ -397,7 +448,7 @@ pub fn app(cx: Scope<AppProps>) -> Element {
             
             // Tab Navigation
             div {
-                style: "display: flex; border-bottom: 2px solid #000; background-color: #f0f0f0;",
+                style: "display: flex; border-bottom: 2px solid #000; background-color: #f0f0f0; align-items: center;",
                 button {
                     style: "padding: 0.75rem 1.5rem; border: 1px solid #000; border-bottom: none; background-color: {editor_tab_bg}; margin-bottom: -2px; cursor: pointer; font-size: 1rem; font-weight: {editor_tab_weight}; margin-right: 0.25rem;",
                     onclick: move |_| active_tab.set(Tab::Editor),
@@ -407,6 +458,16 @@ pub fn app(cx: Scope<AppProps>) -> Element {
                     style: "padding: 0.75rem 1.5rem; border: 1px solid #000; border-bottom: none; background-color: {diagram_tab_bg}; margin-bottom: -2px; cursor: pointer; font-size: 1rem; font-weight: {diagram_tab_weight};",
                     onclick: move |_| active_tab.set(Tab::Diagram),
                     "Diagram (Alt+2)"
+                }
+                
+                // Status indicator (only shown if status tracking is enabled)
+                if ENABLE_STATUS_TRACKING {
+                    rsx! {
+                        div {
+                            style: "margin-left: auto; margin-right: 1rem; padding: 0.5rem 1rem; background-color: {status_color}; color: white; border-radius: 4px; font-size: 0.875rem; font-weight: bold;",
+                            "{status_text}"
+                        }
+                    }
                 }
             }
             
