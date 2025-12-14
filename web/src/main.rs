@@ -12,14 +12,16 @@ use dioxus::{prelude::*};
 use futures::StreamExt;
 use indoc::indoc;
 
+use wasm_bindgen::JsCast;
+
 use tracing::{event, Level};
 
 // ============================================================================
 // FEATURE FLAGS - Change these to enable/disable features at compile time
 // Set all to false to get back to the original code behavior
 // ============================================================================
-const ENABLE_STATUS_TRACKING: bool = false;
-const ENABLE_TIMEOUT_DETECTION: bool = false;
+const ENABLE_STATUS_TRACKING: bool = true;
+const ENABLE_TIMEOUT_DETECTION: bool = true;
 const ENABLE_HISTORY: bool = false;
 const ENABLE_TEST_CONTROLS: bool = false;
 
@@ -170,6 +172,26 @@ const PLACEHOLDER: &str = indoc!("
 // URL PARAMETER HELPER FUNCTION
 // ============================================================================
 
+/// Simple URL encoder that handles common characters
+fn encode_url(input: &str) -> String {
+    let mut encoded = String::with_capacity(input.len() * 3);
+    
+    for byte in input.as_bytes() {
+        match byte {
+            // Unreserved characters (don't need encoding)
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                encoded.push(*byte as char);
+            }
+            // Everything else gets percent-encoded
+            _ => {
+                encoded.push_str(&format!("%{:02X}", byte));
+            }
+        }
+    }
+    
+    encoded
+}
+
 /// Simple URL decoder that handles the most common URL-encoded characters
 fn decode_url(encoded: &str) -> String {
     let mut decoded = String::with_capacity(encoded.len());
@@ -268,6 +290,12 @@ pub struct HistoryEntry {
 
 pub struct AppProps {}
 
+#[derive(Clone, Copy, PartialEq)]
+enum Tab {
+    Editor,
+    Diagram,
+}
+
 #[allow(unused_variables)]
 pub fn app(cx: Scope<AppProps>) -> Element {
 
@@ -278,6 +306,41 @@ pub fn app(cx: Scope<AppProps>) -> Element {
     let model = use_state(&cx, || initial_model.clone());
     let drawing = use_state(&cx, || {
         draw(initial_model.clone()).unwrap_or_default()
+    });
+    
+    // Tab state
+    let active_tab = use_state(&cx, || Tab::Editor);
+    
+    // Keyboard shortcut handler
+    let tab_state = active_tab.clone();
+    use_effect(&cx, (), move |_| {
+        let window = web_sys::window().unwrap();
+        let document = window.document().unwrap();
+        
+        let closure = wasm_bindgen::closure::Closure::wrap(Box::new(move |e: web_sys::KeyboardEvent| {
+            if e.alt_key() {
+                match e.key().as_str() {
+                    "1" => {
+                        e.prevent_default();
+                        tab_state.set(Tab::Editor);
+                    },
+                    "2" => {
+                        e.prevent_default();
+                        tab_state.set(Tab::Diagram);
+                    },
+                    _ => {}
+                }
+            }
+        }) as Box<dyn FnMut(_)>);
+        
+        document
+            .add_event_listener_with_callback("keydown", closure.as_ref().unchecked_ref())
+            .unwrap();
+        
+        // Keep closure alive
+        closure.forget();
+        
+        async move {}
     });
 
     // Processing coroutine - complexity hidden inside
@@ -303,104 +366,167 @@ pub fn app(cx: Scope<AppProps>) -> Element {
         }
     });
 
-    // UI rendering
-    let nodes = render(cx, drawing.get().clone());
+    // UI rendering - render nodes for each tab separately
     let viewbox_width = drawing.viewbox_width;
     let data_svg = as_data_svg(drawing.get().clone(), true);
     let syntax_guide = depict::graph_drawing::frontend::dioxus::syntax_guide(cx)?;
+    
+    // Generate shareable link with current model
+    let window = web_sys::window().expect("should have window");
+    let location = window.location();
+    let base_url = format!(
+        "{}//{}{}",
+        location.protocol().unwrap_or_default(),
+        location.host().unwrap_or_default(),
+        location.pathname().unwrap_or_default()
+    );
+    let encoded_model = encode_url(&model.get());
+    let share_url = format!("{}?input={}", base_url, encoded_model);
+
+    let editor_tab_bg = if *active_tab.get() == Tab::Editor { "#fff" } else { "transparent" };
+    let editor_tab_border = if *active_tab.get() == Tab::Editor { "2px solid #000" } else { "none" };
+    let editor_tab_weight = if *active_tab.get() == Tab::Editor { "bold" } else { "normal" };
+    
+    let diagram_tab_bg = if *active_tab.get() == Tab::Diagram { "#fff" } else { "transparent" };
+    let diagram_tab_border = if *active_tab.get() == Tab::Diagram { "2px solid #000" } else { "none" };
+    let diagram_tab_weight = if *active_tab.get() == Tab::Diagram { "bold" } else { "normal" };
 
     cx.render(rsx!{
         div {
-            class: "main_editor",
+            style: "display: flex; flex-direction: column; height: 100vh;",
+            
+            // Tab Navigation
             div {
-                div {
-                    "Model"
+                style: "display: flex; border-bottom: 2px solid #000; background-color: #f0f0f0;",
+                button {
+                    style: "padding: 0.75rem 1.5rem; border: 1px solid #000; border-bottom: none; background-color: {editor_tab_bg}; margin-bottom: -2px; cursor: pointer; font-size: 1rem; font-weight: {editor_tab_weight}; margin-right: 0.25rem;",
+                    onclick: move |_| active_tab.set(Tab::Editor),
+                    "Editor (Alt+1)"
                 }
-                
-                // Text Editor
-                div {
-                    textarea {
-                        style: "box-sizing: border-box; width: calc(100% - 2em); border-width: 1px; border-color: #000;",
-                        rows: "10",
-                        autocomplete: "off",
-                        "autocapitalize": "off",
-                        autofocus: "true",
-                        spellcheck: "false",
-                        oninput: move |e| {
-                            event!(Level::TRACE, "INPUT");
-                            model.set(e.value.clone());
-                            drawing_client.send(e.value.clone());
-                        },
-                        "{model}"
-                    }
+                button {
+                    style: "padding: 0.75rem 1.5rem; border: 1px solid #000; border-bottom: none; background-color: {diagram_tab_bg}; margin-bottom: -2px; cursor: pointer; font-size: 1rem; font-weight: {diagram_tab_weight};",
+                    onclick: move |_| active_tab.set(Tab::Diagram),
+                    "Diagram (Alt+2)"
                 }
-                
-                // Footer
-                div {
-                    style: "display: flex; flex-direction: row; justify-content: space-between;",
-                    syntax_guide,
+            }
+            
+            // Editor Tab Content
+            if *active_tab.get() == Tab::Editor {
+                rsx! {
                     div {
-                        details {
-                            style: "display: flex; flex-direction: column; align-self: end; font-size: 0.875rem; line-height: 1.25rem;",
-                            summary {
-                                span { "Tools" }
-                            },
+                        style: "flex: 1; overflow: auto; display: flex; flex-direction: column;",
+                        div {
+                            style: "padding: 1rem; display: flex; flex-direction: column;",
                             div {
-                                a {
-                                    href: "{data_svg}",
-                                    download: "depict.svg",
-                                    "Export SVG"
+                                div {
+                                    style: "margin-bottom: 0.5rem;",
+                                    "Model"
                                 }
-                            }
-                            div {
-                                details {
-                                    summary {
-                                        style: "font-size: 0.875rem; line-height: 1.25rem; --tw-text-opacity: 1; color: rgba(156, 163, 175, var(--tw-text-opacity));",
-                                        "Licenses",
-                                    },
+                                
+                                // Text Editor
+                                div {
+                                    textarea {
+                                        style: "box-sizing: border-box; width: 100%; height: 200px; border-width: 1px; border-color: #000; padding: 0.5rem; font-family: monospace;",
+                                        autocomplete: "off",
+                                        "autocapitalize": "off",
+                                        autofocus: "true",
+                                        spellcheck: "false",
+                                        oninput: move |e| {
+                                            model.set(e.value.clone());
+                                            drawing_client.send(e.value.clone());
+                                        },
+                                        "{model}"
+                                    }
+                                }
+                                
+                                // Footer
+                                div {
+                                    style: "display: flex; flex-direction: row; justify-content: space-between; margin-top: 0.5rem; margin-bottom: 1rem;",
+                                    syntax_guide,
                                     div {
-                                        depict::licenses::LICENSES.dirs().map(|dir| {
-                                            let path = dir.path().display();
-                                            cx.render(rsx!{
-                                                div {
-                                                    key: "{path}",
-                                                    span {
-                                                        style: "font-style: italic; text-decoration: underline;",
-                                                        "{path}"
+                                        details {
+                                            style: "display: flex; flex-direction: column; align-self: end; font-size: 0.875rem; line-height: 1.25rem;",
+                                            summary {
+                                                span { "Tools" }
+                                            },
+                                            div {
+                                                a {
+                                                    href: "{data_svg}",
+                                                    download: "depict.svg",
+                                                    "Export SVG"
+                                                }
+                                            }
+                                            div {
+                                                a {
+                                                    href: "{share_url}",
+                                                    target: "_blank",
+                                                    "Share Link"
+                                                }
+                                            }
+                                            div {
+                                                details {
+                                                    summary {
+                                                        style: "font-size: 0.875rem; line-height: 1.25rem; --tw-text-opacity: 1; color: rgba(156, 163, 175, var(--tw-text-opacity));",
+                                                        "Licenses",
                                                     },
-                                                    ul {
-                                                        dir.files().map(|f| {
-                                                            let file_path = f.path();
-                                                            let file_contents = f.contents_utf8().unwrap();
-                                                            cx.render(rsx!{
-                                                                details {
-                                                                    key: "{file_path:?}",
-                                                                    style: "white-space: pre;",
-                                                                    summary {
-                                                                        "{file_path:?}"
+                                                    div {
+                                                        depict::licenses::LICENSES.dirs().map(|dir| {
+                                                            let path = dir.path().display();
+                                                            rsx!{
+                                                                div {
+                                                                    key: "{path}",
+                                                                    span {
+                                                                        style: "font-style: italic; text-decoration: underline;",
+                                                                        "{path}"
+                                                                    },
+                                                                    ul {
+                                                                        dir.files().map(|f| {
+                                                                            let file_path = f.path();
+                                                                            let file_contents = f.contents_utf8().unwrap();
+                                                                            rsx!{
+                                                                                details {
+                                                                                    key: "{file_path:?}",
+                                                                                    style: "white-space: pre;",
+                                                                                    summary {
+                                                                                        "{file_path:?}"
+                                                                                    }
+                                                                                    "{file_contents}"
+                                                                                }
+                                                                            }
+                                                                        })
                                                                     }
-                                                                    "{file_contents}"
                                                                 }
-                                                            })
+                                                            }
                                                         })
                                                     }
                                                 }
-                                            })
-                                        })
+                                            }
+                                        }
                                     }
                                 }
+                            }
+                            
+                            // DRAWING - flows below controls with relative positioning context
+                            div {
+                                style: "position: relative; width: {viewbox_width}px; margin-left: auto; margin-right: auto; border-width: 1px; border-color: #000; margin-top: 1rem;",
+                                render(cx, drawing.get().clone())
                             }
                         }
                     }
                 }
             }
-        }
-        // DRAWING
-        div {
-            class: "content",
-            div {
-                style: "position: relative; width: {viewbox_width}px; margin-left: auto; margin-right: auto; border-width: 1px; border-color: #000;",
-                nodes
+            
+            // Diagram Tab Content
+            if *active_tab.get() == Tab::Diagram {
+                rsx! {
+                    div {
+                        style: "flex: 1; overflow: auto; background-color: white; padding-top: 2rem;",
+                        div {
+                            style: "position: relative; width: {viewbox_width}px; margin-left: auto; margin-right: auto; border-width: 1px; border-color: #000;",
+                            render(cx, drawing.get().clone())
+                        }
+                    }
+                }
             }
         }
     })
