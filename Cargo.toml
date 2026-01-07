@@ -75,6 +75,9 @@ path = "src/lib.rs"
 
 [workspace]
 members = [
+  ".",
+  "ffi",
+
   "dioxus",
   #"objc",
   "parse",
