@@ -8,6 +8,44 @@
 //! "depict-expressions" ("depictions") to "pictures". It is implemented as a
 //! library for easy use by downstream packages like depict's desktop and web
 //! front-ends.
+
+#[cfg(not(any(feature = "osqp", feature = "osqp-rust")))]
+compile_error!("You must enable exactly one solver feature: `osqp` or `osqp-rust`");
+
+// #[cfg(all(feature = "osqp", feature = "osqp-rust"))]
+//compile_error!("Features `osqp` and `osqp-rust` are mutually exclusive");
+
+// #[cfg(all(feature="osqp", not(feature="osqp-rust")))]
+
+// #[cfg(feature = "osqp")]
+// pub(crate) use osqp as osqp_sys;
+
+// #[cfg(all(not(feature="osqp"), feature="osqp-rust"))]
+
+// #[cfg(feature = "osqp-rust")]
+// pub(crate) use osqp_rust as osqp_sys;
+
+use cfg_if::cfg_if;
+
+cfg_if! {
+    if #[cfg(all(
+        not(target_arch = "wasm32"),
+        feature = "osqp"
+    ))] {
+        pub(crate) use osqp as osqp_sys;
+
+    } else if #[cfg(feature = "osqp-rust")] {
+        pub(crate) use osqp_rust as osqp_sys;
+
+    } else {
+        compile_error!(
+            "You must enable exactly one solver feature: `osqp` (native only) or `osqp-rust`"
+        );
+    }
+}
+
+
+
 pub mod printer {
     //! A pretty-printer for "depiction" parse trees
     //!

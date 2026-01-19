@@ -71,6 +71,8 @@ echo ""
 
 docker run --rm \
     -v "$SCRIPT_DIR:/workspace" \
+    -v "$HOME/.pub-cache:/root/.pub-cache" \
+    -v "$HOME/.flutter-cache:/root/.flutter-cache" \
     --name "$CONTAINER_NAME" \
     "$FULL_IMAGE" \
     bash -c '
@@ -81,6 +83,8 @@ docker run --rm \
         echo "Rust version: $(rustc --version)"
         echo "Cargo version: $(cargo --version)"
         echo "Trunk version: $(trunk --version)"
+        echo "Flutter version: $(flutter --version | head -n 1)"
+        echo "Dart version: $(dart --version)"
         echo "Build started: $(date)"
         echo ""
         

@@ -118,6 +118,13 @@
 
 #![deny(clippy::unwrap_used)]
 
+use crate::osqp_sys;  
+//  NB.  in submodules below use:  use super::osqp_sys 
+
+use crate::graph_drawing::osqp::{
+    Constraints, Monomial, Vars, Fresh, Var, Sol, Coeff,
+};
+
 pub mod error {
     //! Error types for graph_drawing
     //!
@@ -133,11 +140,13 @@ pub mod error {
     use petgraph::algo::NegativeCycle;
 
     use super::frontend::log::Error as LogError;
+    
+    use super::osqp_sys;
 
-    #[cfg(all(feature="osqp", not(feature="osqp-rust")))]
-    use osqp;
-    #[cfg(all(not(feature="osqp"), feature="osqp-rust"))]
-    use osqp_rust as osqp;
+    // #[cfg(all(feature="osqp", not(feature="osqp-rust")))]
+    // # use osqp;
+    // #[cfg(all(not(feature="osqp"), feature="osqp-rust"))]
+    // # use osqp_rust as osqp;
 
     #[non_exhaustive]
     #[derive(Debug, thiserror::Error)]
@@ -179,7 +188,7 @@ pub mod error {
         #[error("osqp solver error")]
         OsqpError{error: String},
         #[error("osqp setup error")]
-        OsqpSetupError{#[from] source: osqp::SetupError},
+        OsqpSetupError{#[from] source: osqp_sys::SetupError},
     }
 
     #[non_exhaustive]
@@ -1674,11 +1683,12 @@ pub mod osqp {
     //! in terms of constrained variables.
     use std::{borrow::Cow, collections::{HashMap, BTreeMap, HashSet}, fmt::{Debug, Display}, hash::Hash, ops::{Mul, Neg}};
 
-    #[cfg(all(feature="osqp", not(feature="osqp-rust")))]
-    use osqp;
-    #[cfg(all(not(feature="osqp"), feature="osqp-rust"))]
-    use osqp_rust as osqp;
+    // #[cfg(all(feature="osqp", not(feature="osqp-rust")))]
+    // # use osqp;
+    // #[cfg(all(not(feature="osqp"), feature="osqp-rust"))]
+    // # use osqp_rust as osqp;
 
+    use super::osqp_sys;
     use crate::graph_drawing::frontend::log;
 
     /// A map from Sols to Vars. `get()`ing an not-yet-seen sol
@@ -1873,8 +1883,8 @@ pub mod osqp {
 
     impl<S: Clone + Copy + Debug + Display + Eq + Fresh + Hash + Ord + PartialEq + PartialOrd + log::Names<'static>> Sol for S {}
 
-    /// Convert `rows` into an `osqp::CscMatrix` in "compressed sparse column" format.
-    fn as_csc_matrix<'s, S: Sol, C: Coeff>(nrows: Option<usize>, ncols: Option<usize>, rows: &[&[Monomial<S, C>]]) -> osqp::CscMatrix<'s> {
+    /// Convert `rows` into an `osqp_sys::CscMatrix` in "compressed sparse column" format.
+    fn as_csc_matrix<'s, S: Sol, C: Coeff>(nrows: Option<usize>, ncols: Option<usize>, rows: &[&[Monomial<S, C>]]) -> osqp_sys::CscMatrix<'s> {
         let mut cols: BTreeMap<usize, BTreeMap<usize, f64>> = BTreeMap::new();
         let mut indptr = vec![];
         let mut indices = vec![];
@@ -1908,7 +1918,7 @@ pub mod osqp {
         for _ in cur_col..=ncols {
             indptr.push(data.len());
         }
-        osqp::CscMatrix{
+        osqp_sys::CscMatrix{
             nrows,
             ncols,
             indptr: Cow::Owned(indptr),
@@ -1917,8 +1927,8 @@ pub mod osqp {
         }
     }
 
-    /// Convert `rows` into a *diagonal* `osqp::CscMatrix` in "compressed sparse column" format.
-    pub fn as_diag_csc_matrix<'s, S: Sol, C: Coeff>(nrows: Option<usize>, ncols: Option<usize>, rows: &[Monomial<S, C>]) -> osqp::CscMatrix<'s> {
+    /// Convert `rows` into a *diagonal* `osqp_sys::CscMatrix` in "compressed sparse column" format.
+    pub fn as_diag_csc_matrix<'s, S: Sol, C: Coeff>(nrows: Option<usize>, ncols: Option<usize>, rows: &[Monomial<S, C>]) -> osqp_sys::CscMatrix<'s> {
         let mut cols: BTreeMap<usize, BTreeMap<usize, f64>> = BTreeMap::new();
         let mut indptr = vec![];
         let mut indices = vec![];
@@ -1950,7 +1960,7 @@ pub mod osqp {
         for _ in cur_col..=ncols {
             indptr.push(data.len());
         }
-        osqp::CscMatrix{
+        osqp_sys::CscMatrix{
             nrows,
             ncols,
             indptr: Cow::Owned(indptr),
@@ -1959,8 +1969,8 @@ pub mod osqp {
         }
     }
 
-    pub fn as_scipy(name: impl Display, m: &osqp::CscMatrix) {
-        let osqp::CscMatrix{
+    pub fn as_scipy(name: impl Display, m: &osqp_sys::CscMatrix) {
+        let osqp_sys::CscMatrix{
             nrows,
             ncols,
             indptr,
@@ -1974,7 +1984,7 @@ pub mod osqp {
         eprintln!("{name} = np.array({v:?})");
     }
 
-    impl<'s, S: Sol, C: Coeff> From<Constraints<S, C>> for osqp::CscMatrix<'s> {
+    impl<'s, S: Sol, C: Coeff> From<Constraints<S, C>> for osqp_sys::CscMatrix<'s> {
         fn from(c: Constraints<S, C>) -> Self {
             let a = &c.constrs
                 .iter()
@@ -2062,12 +2072,12 @@ pub mod osqp {
         }
     }
 
-    /// A debug print helper for dumping `osqp::CscMatrix`s
-    pub fn print_tuples(name: &str, m: &osqp::CscMatrix) {
+    /// A debug print helper for dumping `osqp_sys::CscMatrix`s
+    pub fn print_tuples(name: &str, m: &osqp_sys::CscMatrix) {
         // conceptually, we walk over the columns, then the rows,
         // recording each non-zero value + its row index, and
         // as we finish each column, the current data length.
-        // let P = osqp::CscMatrix::from(&[[4., 1.], [1., 0.]]).into_upper_tri();
+        // let P = osqp_sys::CscMatrix::from(&[[4., 1.], [1., 0.]]).into_upper_tri();
         eprintln!("{name}: {:?}", m);
         let mut n = 0;
         let mut col = 0;
@@ -4123,16 +4133,17 @@ pub mod geometry {
     //! Abstractly, the data and the steps required to convert geometric relations into geometry are:
     //!
     //! 1. the input data need to be organized (here, via [`calculate_sols()`]) so that constraints can be generated and so that the optimization objective can be formed.
-    //! 2. then, once constraints and the objective are generated, they need to be formatted as an [osqp::CscMatrix] and associated `&[f64]` slices, passed to [osqp::Problem], and solved.
+    //! 2. then, once constraints and the objective are generated, they need to be formatted as an [osqp_sys::CscMatrix] and associated `&[f64]` slices, passed to [osqp_sys::Problem], and solved.
     //! 3. then, the resulting [osqp_rust::Solution] needs to be destructured so that the resulting solution values can be returned to [`position_sols()`]'s caller as a [GeometrySolution].
 
+    use super::osqp_sys;
     use enum_kinds::EnumKind;
     use ordered_float::OrderedFloat;
 
-    #[cfg(all(feature="osqp", not(feature="osqp-rust")))]
-    use osqp;
-    #[cfg(all(not(feature="osqp"), feature="osqp-rust"))]
-    use osqp_rust as osqp;
+    // #[cfg(all(feature="osqp", not(feature="osqp-rust")))]
+    // # use osqp;
+    // #[cfg(all(not(feature="osqp"), feature="osqp-rust"))]
+    // # use osqp_rust as osqp;
 
     use petgraph::EdgeDirection::{Outgoing, Incoming};
     use petgraph::Graph;
@@ -4146,7 +4157,10 @@ pub mod geometry {
 
     use super::error::{LayoutError};
     use super::frontend::log::Name;
-    use super::osqp::{Constraints, Monomial, Vars, Fresh, Var, Sol, Coeff};
+    //use super::osqp_sys::{Constraints, Monomial, Vars, Fresh, Var, Sol, Coeff};
+    use crate::graph_drawing::osqp::{
+    Constraints, Monomial, Vars, Fresh, Var, Sol, Coeff,
+    };
 
     use super::error::Error;
     use super::index::{VerticalRank, OriginalHorizontalRank, SolvedHorizontalRank, VarRank};
@@ -5328,7 +5342,7 @@ pub mod geometry {
     ) -> Result<(Vec<(Var<AnySol>, f64)>, OSQPStatusKind), Error> {
         let OptimizationProblem{v, c, pd, q} = optimization_problem;
 
-        let settings = osqp::Settings::default()
+        let settings = osqp_sys::Settings::default()
             .verbose(false)
             // .adaptive_rho(false)
             // .rho(6.)
@@ -5371,7 +5385,7 @@ pub mod geometry {
         // eprintln!("V[{}]: {v}", v.len());
         // eprintln!("C[{}]: {c}", &c.len());
 
-        let a2: osqp::CscMatrix = c.clone().into();
+        let a2: osqp_sys::CscMatrix = c.clone().into();
 
         // eprintln!("P2[{},{}]: {p2:?}", p2.nrows, p2.ncols);
         // eprintln!("Q2[{}]: {q2:?}", q2.len());
@@ -5396,16 +5410,16 @@ pub mod geometry {
         // eprintln!("r.info.status");
         // eprintln!("r.x");
 
-        let mut prob = osqp::Problem::new(p2, &q2[..], a2, &l2[..], &u2[..], settings)
+        let mut prob = osqp_sys::Problem::new(p2, &q2[..], a2, &l2[..], &u2[..], settings)
             .map_err(|e| Error::from(LayoutError::from(e)))?;
 
         let result = prob.solve();
         // eprintln!("STATUS {:?}", result);
         let solution = match result {
-            osqp::Status::Solved(solution) => Ok((solution, OSQPStatusKind::Solved)),
-            osqp::Status::SolvedInaccurate(solution) => Ok((solution, OSQPStatusKind::SolvedInaccurate)),
-            osqp::Status::MaxIterationsReached(solution) => Ok((solution, OSQPStatusKind::MaxIterationsReached)),
-            osqp::Status::TimeLimitReached(solution) => Ok((solution, OSQPStatusKind::TimeLimitReached)),
+            osqp_sys::Status::Solved(solution) => Ok((solution, OSQPStatusKind::Solved)),
+            osqp_sys::Status::SolvedInaccurate(solution) => Ok((solution, OSQPStatusKind::SolvedInaccurate)),
+            osqp_sys::Status::MaxIterationsReached(solution) => Ok((solution, OSQPStatusKind::MaxIterationsReached)),
+            osqp_sys::Status::TimeLimitReached(solution) => Ok((solution, OSQPStatusKind::TimeLimitReached)),
             _ => Err(LayoutError::OsqpError{error: "failed to solve problem".into(),}),
         }?;
         let x = solution.0.x();

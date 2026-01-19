@@ -113,15 +113,15 @@ unsafe extern "C" fn mach_absolute_time() -> ::std::os::raw::c_longlong {
     now()
 }
 
-use osqp_rust_sys::src::src::util::{mach_timebase_info_t, kern_return_t};
+// use osqp_rust_sys::src::src::util::{mach_timebase_info_t, kern_return_t};
 
-#[no_mangle]
-unsafe extern "C" fn mach_timebase_info(info: mach_timebase_info_t) -> kern_return_t {
-    let info = &mut *info;
-    info.numer = 1;
-    info.denom = 1;
-    0
-}
+// #[no_mangle]
+// unsafe extern "C" fn mach_timebase_info(info: mach_timebase_info_t) -> kern_return_t {
+//    let info = &mut *info;
+//    info.numer = 1;
+//    info.denom = 1;
+//    0
+// }
 
 #[no_mangle]
 unsafe extern "C" fn dlopen(__path: *const ::std::os::raw::c_char, __mode: ::std::os::raw::c_int) -> *mut ::std::os::raw::c_void {
@@ -151,17 +151,17 @@ unsafe extern "C" fn sqrt(x: ::std::os::raw::c_double) -> ::std::os::raw::c_doub
     x.sqrt()
 }
 
-use osqp_rust_sys::src::lin_sys::lib_handler::__darwin_ct_rune_t;
+// use osqp_rust_sys::src::lin_sys::lib_handler::__darwin_ct_rune_t;
 
-#[no_mangle]
-unsafe extern "C" fn __tolower(_: __darwin_ct_rune_t) -> __darwin_ct_rune_t {
-    todo!()
-}
+// #[no_mangle]
+// unsafe extern "C" fn __tolower(_: __darwin_ct_rune_t) -> __darwin_ct_rune_t {
+//    todo!()
+// }
 
-#[no_mangle]
-unsafe extern "C" fn __toupper(_: __darwin_ct_rune_t) -> __darwin_ct_rune_t {
-    todo!()
-}
+// #[no_mangle]
+// unsafe extern "C" fn __toupper(_: __darwin_ct_rune_t) -> __darwin_ct_rune_t {
+//     todo!()
+// }
 
 const PLACEHOLDER: &str = indoc!("
     person microwave food: open, start, stop / beep : heat

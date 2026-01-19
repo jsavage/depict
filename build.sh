@@ -42,6 +42,20 @@ echo "Build host: $(uname -a)"
 echo "Date: $(date)"
 echo "================================================"
 echo ""
+echo "======== osqp Checks ============================"
+set -e
+#cargo clean
+#cargo check --no-default-features
+#cargo check --workspace --all-targets --features osqp
+#cargo check --features osqp
+#cargo check --features osqp-rust
+#cargo check -p depict-desktop
+#cargo check -p depict-web
+cargo check -p depict_ffi
+cargo test -p depict_ffi
+echo ""
+echo "======== END OF Checks ====================="
+echo ""
 
 # Step 2: Fix known code issues
 echo "2. Applying code fixes..."
@@ -66,13 +80,13 @@ echo ""
 
 # Step 3: Build desktop application
 echo "3. Building desktop application..."
-cargo build $RELEASE_FLAG -p depict-desktop
+#cargo build $RELEASE_FLAG -p depict-desktop
 echo "✓ Desktop built"
 echo ""
 
 # Step 4: Build server
 echo "4. Building server..."
-cargo build $RELEASE_FLAG -p depict-server
+#cargo build $RELEASE_FLAG -p depict-server
 echo "✓ Server built"
 echo ""
 
@@ -81,7 +95,7 @@ echo ""
 echo "5. Building web WASM..."
 
 # build the web package
-cargo build $RELEASE_FLAG -p depict-web --target wasm32-unknown-unknown
+#cargo build $RELEASE_FLAG -p depict-web --target wasm32-unknown-unknown
 echo "✓ Web WASM built"
 echo ""
 
@@ -97,6 +111,33 @@ cd ..
 echo "✓ Web assets built"
 echo ""
 
+
+# Step for Flutter
+echo "***** New ****** Building FFI"  
+cargo build $RELEASE_FLAG -p depict_ffi
+
+echo "✓ FFI assets built"
+
+
+# Step: Build Flutter app (Linux desktop)
+if [ -d "flutter_app" ]; then
+    echo "Building Flutter app..."
+    cd flutter_app
+
+    flutter pub get
+
+    if [ "$RELEASE_FLAG" = "--release" ]; then
+        flutter build linux --release
+    else
+        flutter build linux
+    fi
+
+    cd ..
+    echo "✓ Flutter app built"
+fi
+
+
+
 # Step 7: Organize build artifacts
 echo "7. Organizing build artifacts..."
 mkdir -p "$BUILD_DIR/dist"
@@ -111,6 +152,8 @@ fi
 # Copy binaries
 cp "$TARGET_DIR/depict-desktop" "$BUILD_DIR/dist/"
 cp "$TARGET_DIR/depict-server" "$BUILD_DIR/dist/"
+cp "$TARGET_DIR/libdepict_ffi.so" "$BUILD_DIR/dist/"
+
 echo "✓ Copied binaries"
 
 # Copy web assets
@@ -120,6 +163,7 @@ echo "✓ Copied web assets"
 # Make binaries executable
 chmod +x "$BUILD_DIR/dist/depict-desktop"
 chmod +x "$BUILD_DIR/dist/depict-server"
+chmod +x "$BUILD_DIR/dist/libdepict_ffi.so"
 echo "✓ Set executable permissions"
 echo ""
 

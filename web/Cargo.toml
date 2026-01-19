@@ -18,8 +18,9 @@ getrandom = { version = "0.2", features = ["js"] }
 indoc = "1.0"
 log = "0.4.6"
 logos = "0.12"
-osqp-rust = { version = "0.6", git = "https://github.com/mstone/osqp.rs" }
-osqp-rust-sys = { version = "0.6", git = "https://github.com/mstone/osqp.rs" }
+osqp-rust = { version = "0.6", optional = true }
+# osqp-rust = { version = "0.6", git = "https://github.com/mstone/osqp.rs" }
+# osqp-rust-sys = { version = "0.6", git = "https://github.com/mstone/osqp.rs" }
 petgraph = { version = "0.6", features = ["serde-1"] }
 printf-compat = "0.1"
 serde = "1"
@@ -28,5 +29,6 @@ tracing = "0.1"
 wasm-bindgen = { version = "0.2", features = [ "serde-serialize" ] }
 wasm-logger = "0.2.0"
 web-sys = { version = "0.3.4", features = [ "Window", "Performance", "PerformanceTiming" ] }
+
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 gloo-timers = { version = "0.3", features = ["futures"] }

@@ -4,7 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib","rlib"]
+# //  to make rust integration test work we need to build both a Rust library and a C-compatible dynamic library.
 
 [dependencies]
-depict = { path = ".." }
+urlencoding = "2"
+
+[dependencies.depict]
+path = ".."
+default-features = false
+features = ["osqp", "dioxus"]

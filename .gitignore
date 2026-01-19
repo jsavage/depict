@@ -8,3 +8,27 @@ test_results/
 build_*/
 web/dist/
 target/
+
+# Rust
+/target/
+**/*.bak
+
+# Flutter / Dart
+depict_flutter/build/
+depict_flutter/.dart_tool/
+depict_flutter/.flutter-plugins
+depict_flutter/.flutter-plugins-dependencies
+
+# Logs and artifacts
+build-*.log
+*.log
+out.svg
+tests/ffi_render.log
+errors.txt
+
+# Local scratch / notes
+bootstrap1.txt
+Files/
+
+# OS
+.DS_Store

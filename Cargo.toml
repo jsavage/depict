@@ -10,9 +10,13 @@ repository = "https://github.com/mstone/depict"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[patch.crates-io]
+osqp-rust = { git = "https://github.com/mstone/osqp.rs" }
+osqp-rust-sys = { git = "https://github.com/mstone/osqp.rs" }
+
 [features]
-default = ["osqp-rust"]
-osqp-rust = ["dep:osqp-rust", "dep:osqp"]
+default = ["osqp"]
+osqp-rust = ["dep:osqp-rust"]
 osqp = ["dep:osqp"]
 desktop = ["interprocess/tokio_support", "serde", "serde/derive"]
 server = ["petgraph/serde-1", "serde", "serde/derive", "serde_json"]
@@ -23,6 +27,7 @@ pretty_assertions = "1"
 proptest = "1"
 
 [dependencies]
+cfg-if = "1"
 anyhow = { version = "1" }
 colorous = { version = "1" }
 derive_more = "0.99"
@@ -33,6 +38,8 @@ include_dir = "0.7"
 itertools = "0.10"
 logos = "0.12"
 ordered-float = "3"
+#osqp = { version = "0.6", optional = true }
+osqp-rust = { version = "0.6", optional = true }
 petgraph = "0.6"
 pomelo = { version = "0.1" }
 self_cell = "0.10.2"
@@ -47,7 +54,7 @@ serde_json = { version = "1", optional = true }
 
 # Non-WASM targets (desktop, server)
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-osqp = { version = "0.6", optional = true }
+osqp = { version = "1.0.1", optional = true }
 
 # WASM targets
 [target.'cfg(target_arch = "wasm32")'.dependencies]
@@ -57,7 +64,7 @@ gloo-timers = "0.3"
 # native C compilation via cmake/clang. The standard osqp crate uses osqp-sys
 # which attempts to compile C code and fails for WASM targets.
 
-osqp-rust = { version = "0.6", optional = true, git = "https://github.com/mstone/osqp.rs" }
+# osqp-rust = { version = "0.6", optional = true, git = "https://github.com/mstone/osqp.rs" }
 
 
 # client
@@ -72,12 +79,12 @@ interprocess = { version = "1", optional = true }
 [lib]
 name = "depict"
 path = "src/lib.rs"
+crate-type = ["cdylib","rlib"]
 
 [workspace]
 members = [
   ".",
   "ffi",
-
   "dioxus",
   #"objc",
   "parse",
