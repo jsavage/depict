@@ -92,6 +92,12 @@ jobs:
     - name: Ensure correct dependency versions
       run: |
         echo "Checking and fixing dependency versions..."
+
+    - name: Validate Cargo dependency
+      run: |
+        grep -n 'inflector' server/Cargo.toml
+        cargo metadata --format-version 1 --no-deps >/dev/null
+
     
         # Ensure factorial is version 0.4
         sed -i 's/factorial = "[^"]*"/factorial = "0.4"/' Cargo.toml
