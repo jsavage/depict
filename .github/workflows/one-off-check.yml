@@ -1,14 +1,82 @@
-- name: Generate Cargo.lock with current stable Rust
-  shell: bash
-  run: |
-    set -euxo pipefail
-    rustup toolchain install stable --profile minimal
-    cargo +stable generate-lockfile
+name: Update Cargo.lock
 
-- name: Verify with the build toolchain
-  shell: bash
-  run: |
-    set -euxo pipefail
-    rustup toolchain install nightly-2024-05-01 --profile minimal
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: read
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTUP_TOOLCHAIN: nightly-2024-05-01
+
+jobs:
+  update-lockfile:
+    runs-on: ubuntu-latest
+
+    container:
+      image: ghcr.io/jsavage/depict-builder:ubuntu22.04-nightly-2024-05-01
+      credentials:
+        username: jsavage
+        password: ${{ secrets.GHCR_PAT_READ }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure Git safe directory
+        shell: bash
+        run: |
+          git config --global --add safe.directory /github/workspace
+
+      - name: Configure Rust toolchain
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          rustup set auto-self-update disable
+
+          rustup toolchain install nightly-2024-05-01 \
+            --profile minimal
+
+          rustc --version
+          cargo --version
+          rustup show active-toolchain
+
+      - name: Generate lock file
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cargo generate-lockfile
+
+      - name: Verify with the build toolchain
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cargo metadata \
+            --format-version 1 \
+            --locked \
+            --no-deps
+
+          cargo fetch --locked
+
+      - name: Commit Cargo.lock
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          if git diff --quiet -- Cargo.lock; then
+            echo "Cargo.lock did not change"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add Cargo.lock
+          git commit -m "Update Cargo.lock"
+          git push
+tall nightly-2024-05-01 --profile minimal
     cargo +nightly-2024-05-01 metadata --locked --format-version 1 --no-deps
     cargo +nightly-2024-05-01 fetch --locked
