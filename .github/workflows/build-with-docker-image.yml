@@ -79,7 +79,7 @@ jobs:
           sed -i \
             's/\[127, 0, 0, 1\]/[0, 0, 0, 0]/g' \
             server/src/main.rs || true
-
+#
       - name: Validate Cargo configuration
         shell: bash
         run: |
@@ -90,15 +90,16 @@ jobs:
 
           cargo metadata \
             --format-version 1 \
+            --locked \
             --no-deps \
             >/dev/null
 
-      - name: Update dependencies
+      - name: Fetch locked dependencies
         shell: bash
         run: |
           set -euxo pipefail
-          cargo update
-
+          cargo fetch --locked
+#
       - name: Build desktop GUI
         shell: bash
         run: |
@@ -106,7 +107,7 @@ jobs:
 
           echo "::group::Building desktop component"
           echo "Rust toolchain: ${RUSTUP_TOOLCHAIN}"
-          cargo build --release -p depict-desktop 2>&1 | tee desktop-build.log
+          cargo build --release --locked -p depict-desktop 2>&1 | tee desktop-build.log
           echo "::endgroup::"
 
           if [ -f "target/release/depict-desktop" ]; then
@@ -123,7 +124,7 @@ jobs:
           set -o pipefail
 
           echo "::group::Building server component"
-          cargo build --release -p depict-server 2>&1 | tee server-build.log
+          cargo build --release --locked -p depict-server 2>&1 | tee server-build.log
           echo "::endgroup::"
 
           if [ -f "target/release/depict-server" ]; then
@@ -141,7 +142,7 @@ jobs:
 
           echo "::group::Building web WASM component"
           cargo build \
-            --release \
+            --release --locked \
             -p depict-web \
             --target wasm32-unknown-unknown \
             2>&1 | tee web-build.log
