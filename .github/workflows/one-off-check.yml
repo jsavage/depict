@@ -2,58 +2,54 @@ name: Update Cargo.lock
 
 on:
   workflow_dispatch:
+    inputs:
+      update_mode:
+        description: Dependency update mode
+        required: true
+        default: workspace
+        type: choice
+        options:
+          - workspace
+          - all
 
 permissions:
   contents: write
-  packages: read
 
 env:
   CARGO_TERM_COLOR: always
-  RUSTUP_TOOLCHAIN: nightly-2024-05-01
+  RUST_VERSION: "1.85.0"
 
 jobs:
   update-lockfile:
+    name: Update Cargo.lock
     runs-on: ubuntu-latest
 
-    container:
-      image: ghcr.io/jsavage/depict-builder:ubuntu22.04-nightly-2024-05-01
-      credentials:
-        username: jsavage
-        password: ${{ secrets.GHCR_PAT_READ }}
-
     steps:
-      - name: Checkout repository
+      - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Configure Git safe directory
-        shell: bash
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+
+      - name: Show toolchain versions
         run: |
-          git config --global --add safe.directory /github/workspace
-
-      - name: Configure Rust toolchain
-        shell: bash
-        run: |
-          set -euxo pipefail
-
-          rustup set auto-self-update disable
-
-          rustup toolchain install nightly-2024-05-01 \
-            --profile minimal
-
           rustc --version
           cargo --version
-          rustup show active-toolchain
 
-      - name: Generate lock file
-        shell: bash
+      - name: Update lockfile
         run: |
-          set -euxo pipefail
-          cargo generate-lockfile
+          if [ "${{ inputs.update_mode }}" = "all" ]; then
+            cargo update
+          else
+            cargo update --workspace
+          fi
 
-      - name: Verify with the build toolchain
-        shell: bash
+      - name: Verify lockfile
         run: |
-          set -euxo pipefail
           cargo metadata \
             --format-version 1 \
             --locked \
@@ -61,11 +57,8 @@ jobs:
 
           cargo fetch --locked
 
-      - name: Commit Cargo.lock
-        shell: bash
+      - name: Commit updated lockfile
         run: |
-          set -euxo pipefail
-
           if git diff --quiet -- Cargo.lock; then
             echo "Cargo.lock did not change"
             exit 0
