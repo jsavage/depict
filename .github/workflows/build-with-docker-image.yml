@@ -76,7 +76,7 @@ jobs:
             Cargo.toml || true
 
           # Regenerate Cargo.lock after changing Cargo.toml.
-          cargo generate-lockfile
+          # cargo generate-lockfile
 
           # Allow the server to accept connections from outside the container.
           sed -i \
