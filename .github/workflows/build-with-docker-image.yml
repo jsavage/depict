@@ -75,11 +75,14 @@ jobs:
             's/factorial = "[^"]*"/factorial = "0.4"/' \
             Cargo.toml || true
 
+          # Regenerate Cargo.lock after changing Cargo.toml.
+          cargo generate-lockfile
+
           # Allow the server to accept connections from outside the container.
           sed -i \
             's/\[127, 0, 0, 1\]/[0, 0, 0, 0]/g' \
             server/src/main.rs || true
-#
+
       - name: Validate Cargo configuration
         shell: bash
         run: |
