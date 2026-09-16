@@ -1,0 +1,4 @@
+      - name: Verify with the build toolchain
+        run: |
+          rustup toolchain install nightly-2024-05-01 --profile minimal
+          cargo +nightly-2024-05-01 fetch --locked
