@@ -25,8 +25,14 @@ jobs:
           git rev-parse HEAD
 
           echo
+          echo "=== GitHub event ==="
+          echo "GITHUB_EVENT_NAME=$GITHUB_EVENT_NAME"
+          echo "GITHUB_REF=$GITHUB_REF"
+          echo "GITHUB_SHA=$GITHUB_SHA"
+
+          echo
           echo "=== Branch ==="
-          git branch --show-current
+          git branch -a -vv
 
           echo
           echo "=== Cargo.lock ahash ==="
