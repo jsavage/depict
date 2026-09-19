@@ -119,17 +119,17 @@ jobs:
 
     - name: Organize static release
       run: |
-        BUILD_NAME="depict-web-static-${{ steps.info.outputs.version }}"
-        mkdir -p "$BUILD_NAME"
+          BUILD_NAME="depict-web-static-${{ steps.info.outputs.version }}"
+          mkdir -p "$BUILD_NAME"
         
-        # Copy only the static files needed
-        cp web/dist/index.html "$BUILD_NAME/"
-        cp web/dist/*.wasm "$BUILD_NAME/"
-        cp web/dist/depict-web*.js "$BUILD_NAME/"
-        cp web/dist/*.css "$BUILD_NAME/" 2>/dev/null || true
+          # Copy only the static files needed
+          cp web/dist/index.html "$BUILD_NAME/"
+          cp web/dist/*.wasm "$BUILD_NAME/"
+          cp web/dist/depict-web*.js "$BUILD_NAME/"
+          cp web/dist/*.css "$BUILD_NAME/" 2>/dev/null || true
         
-        # Create deployment README
-        cat > "$BUILD_NAME/README.txt" <<EOF
+          # Create deployment README
+          cat > "$BUILD_NAME/README.txt" <<EOF
 Depict Web - Static Deployment
 Version: ${{ steps.info.outputs.version }}
 Build Date: $(date +%Y-%m-%d)

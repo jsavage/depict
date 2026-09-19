@@ -1,0 +1,92 @@
+name: Depict Docker Build
+
+on:
+  push:
+    branches:
+      - "**"
+
+  pull_request:
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Depict in Docker
+    runs-on: ubuntu-22.04
+
+    steps:
+     
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Show checkout revision
+        run: |
+          echo "=== Git revision ==="
+          git rev-parse HEAD
+
+          echo
+          echo "=== GitHub event ==="
+          echo "GITHUB_EVENT_NAME=$GITHUB_EVENT_NAME"
+          echo "GITHUB_REF=$GITHUB_REF"
+          echo "GITHUB_SHA=$GITHUB_SHA"
+
+          echo
+          echo "=== Branch ==="
+          git branch -a -vv
+
+          echo
+          echo "=== Cargo.lock ahash ==="
+          git show HEAD:Cargo.lock | grep -A12 -B2 '^name = "ahash"'
+
+          echo
+          echo "=== Dockerfile toolchain ==="
+          grep -nE 'RUST_NIGHTLY_DATE|FLUTTER_HOME|flutter|wasm-bindgen|trunk' Dockerfile
+#######
+      
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t depict-builder:ubuntu22.04-rust-nightly-2024-11-30 \
+            .
+
+      - name: Run Depict build inside Docker
+        run: |
+          docker run --rm \
+            -v "$PWD:/workspace" \
+            depict-builder:ubuntu22.04-rust-nightly-2024-11-30 \
+            bash -c '
+              set -euo pipefail
+
+              cd /workspace
+
+              echo "=== Inside GitHub Actions Docker Container ==="
+              echo "Rust version: $(rustc --version)"
+              echo "Cargo version: $(cargo --version)"
+              echo "Trunk version: $(trunk --version)"
+              echo "Flutter version: $(flutter --version | head -n 1)"
+              echo "Dart version: $(dart --version)"
+              echo "Build started: $(date)"
+              echo
+
+              chmod +x build.sh
+              ./build.sh
+
+              echo
+              echo "Build completed: $(date)"
+            '
+
+      - name: Show build artifacts
+        if: success()
+        run: |
+          echo "Build artifacts:"
+          find . -maxdepth 2 -type d -name 'build_*' -print
+
+      - name: Upload build artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: depict-build
+          path: |
+            build_*/
+          if-no-files-found: error

@@ -80,13 +80,13 @@ echo ""
 
 # Step 3: Build desktop application
 echo "3. Building desktop application..."
-#cargo build $RELEASE_FLAG -p depict-desktop
+cargo build $RELEASE_FLAG -p depict-desktop
 echo "✓ Desktop built"
 echo ""
 
 # Step 4: Build server
 echo "4. Building server..."
-#cargo build $RELEASE_FLAG -p depict-server
+cargo build $RELEASE_FLAG -p depict-server
 echo "✓ Server built"
 echo ""
 
@@ -95,6 +95,7 @@ echo ""
 echo "5. Building web WASM..."
 
 # build the web package
+# the following commented out to avoid duplication because Trunk is doing the web build
 #cargo build $RELEASE_FLAG -p depict-web --target wasm32-unknown-unknown
 echo "✓ Web WASM built"
 echo ""
