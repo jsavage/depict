@@ -116,7 +116,6 @@ jobs:
         echo "js_size=$JS_SIZE" >> $GITHUB_OUTPUT
         echo "html_size=$HTML_SIZE" >> $GITHUB_OUTPUT
         echo "css_size=$CSS_SIZE" >> $GITHUB_OUTPUT
-
     - name: Organize static release
       run: |
         chmod +x web-release-do-doc.sh
