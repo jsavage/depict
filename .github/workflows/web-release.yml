@@ -130,113 +130,113 @@ jobs:
         
           # Create deployment README
           cat > "$BUILD_NAME/README.txt" <<EOF
-Depict Web - Static Deployment
-Version: ${{ steps.info.outputs.version }}
-Build Date: $(date +%Y-%m-%d)
-Commit: ${{ github.sha }}
-
-═══════════════════════════════════════
-FILE CONTENTS
-═══════════════════════════════════════
-
-This archive contains everything needed to deploy Depict as a static web application:
-
-  index.html          Entry point (HTML)
-  depict-web-*.wasm   WebAssembly module (${{ steps.info.outputs.wasm_size }})
-  depict-web-*.js     JavaScript bindings (${{ steps.info.outputs.js_size }})
-  index-*.css         Stylesheets (${{ steps.info.outputs.css_size }})
-
-Total size: ~5 MB
-
-═══════════════════════════════════════
-DEPLOYMENT OPTIONS
-═══════════════════════════════════════
-
-Option 1: GitHub Pages
-  1. Upload files to docs/ or gh-pages branch
-  2. Enable GitHub Pages in repository settings
-  3. Done!
-
-Option 2: Static Hosting (Netlify, Vercel, etc.)
-  1. Drag and drop this folder
-  2. Deploy automatically
-
-Option 3: Your Own Web Server
-
-  Apache:
-    - Copy files to /var/www/html/depict/
-    - Add .htaccess for SPA routing (see below)
-  
-  Nginx:
-    - Copy files to web root
-    - Configure to serve index.html for all routes
-  
-  Python (for testing):
-    - cd into this folder
-    - python3 -m http.server 8080
-    - Visit http://localhost:8080
-
-═══════════════════════════════════════
-APACHE .htaccess
-═══════════════════════════════════════
-
-Create .htaccess in the deployment folder:
-
-RewriteEngine On
-RewriteBase /
-RewriteRule ^index\.html$ - [L]
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule . /index.html [L]
-AddType application/wasm .wasm
-
-═══════════════════════════════════════
-NGINX CONFIGURATION
-═══════════════════════════════════════
-
-server {
-    listen 80;
-    server_name example.com;
-    root /path/to/depict;
-    
-    location / {
-        try_files \$uri \$uri/ /index.html;
-    }
-    
-    types {
-        application/wasm wasm;
-    }
-}
-
-═══════════════════════════════════════
-BROWSER REQUIREMENTS
-═══════════════════════════════════════
-
-Requires a modern browser with WebAssembly support:
-  - Chrome/Edge 57+
-  - Firefox 52+
-  - Safari 11+
-
-═══════════════════════════════════════
-NO SERVER REQUIRED
-═══════════════════════════════════════
-
-This is a pure static deployment. All computation happens in 
-the browser. You don't need:
-  - Node.js
-  - Python
-  - Ruby
-  - PHP
-  - Any backend server
-
-Just upload the files and serve them. That's it!
-
-═══════════════════════════════════════
-
-For more information:
-https://github.com/jsavage/depict
-
-EOF
+          Depict Web - Static Deployment
+          Version: ${{ steps.info.outputs.version }}
+          Build Date: $(date +%Y-%m-%d)
+          Commit: ${{ github.sha }}
+          
+          ═══════════════════════════════════════
+          FILE CONTENTS
+          ═══════════════════════════════════════
+          
+          This archive contains everything needed to deploy Depict as a static web application:
+          
+            index.html          Entry point (HTML)
+            depict-web-*.wasm   WebAssembly module (${{ steps.info.outputs.wasm_size }})
+            depict-web-*.js     JavaScript bindings (${{ steps.info.outputs.js_size }})
+            index-*.css         Stylesheets (${{ steps.info.outputs.css_size }})
+          
+          Total size: ~5 MB
+          
+          ═══════════════════════════════════════
+          DEPLOYMENT OPTIONS
+          ═══════════════════════════════════════
+          
+          Option 1: GitHub Pages
+            1. Upload files to docs/ or gh-pages branch
+            2. Enable GitHub Pages in repository settings
+            3. Done!
+          
+          Option 2: Static Hosting (Netlify, Vercel, etc.)
+            1. Drag and drop this folder
+            2. Deploy automatically
+          
+          Option 3: Your Own Web Server
+          
+            Apache:
+              - Copy files to /var/www/html/depict/
+              - Add .htaccess for SPA routing (see below)
+            
+            Nginx:
+              - Copy files to web root
+              - Configure to serve index.html for all routes
+            
+            Python (for testing):
+              - cd into this folder
+              - python3 -m http.server 8080
+              - Visit http://localhost:8080
+          
+          ═══════════════════════════════════════
+          APACHE .htaccess
+          ═══════════════════════════════════════
+          
+          Create .htaccess in the deployment folder:
+          
+          RewriteEngine On
+          RewriteBase /
+          RewriteRule ^index\.html$ - [L]
+          RewriteCond %{REQUEST_FILENAME} !-f
+          RewriteCond %{REQUEST_FILENAME} !-d
+          RewriteRule . /index.html [L]
+          AddType application/wasm .wasm
+          
+          ═══════════════════════════════════════
+          NGINX CONFIGURATION
+          ═══════════════════════════════════════
+          
+          server {
+              listen 80;
+              server_name example.com;
+              root /path/to/depict;
+              
+              location / {
+                  try_files \$uri \$uri/ /index.html;
+              }
+              
+              types {
+                  application/wasm wasm;
+              }
+          }
+          
+          ═══════════════════════════════════════
+          BROWSER REQUIREMENTS
+          ═══════════════════════════════════════
+          
+          Requires a modern browser with WebAssembly support:
+            - Chrome/Edge 57+
+            - Firefox 52+
+            - Safari 11+
+          
+          ═══════════════════════════════════════
+          NO SERVER REQUIRED
+          ═══════════════════════════════════════
+          
+          This is a pure static deployment. All computation happens in 
+          the browser. You don't need:
+            - Node.js
+            - Python
+            - Ruby
+            - PHP
+            - Any backend server
+          
+          Just upload the files and serve them. That's it!
+          
+          ═══════════════════════════════════════
+          
+          For more information:
+          https://github.com/jsavage/depict
+          
+          EOF
         
         # Create tarball
         tar -czf "${BUILD_NAME}.tar.gz" "$BUILD_NAME"
